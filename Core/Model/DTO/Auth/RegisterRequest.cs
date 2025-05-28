@@ -25,7 +25,6 @@ public class RegisterRequest : IValidatableObject
     public string Phone { get; set; }
 
     [Required(ErrorMessage = "Birthdate is required")]
-    [DateValidation]
     [MinAge(18, ErrorMessage = "Возраст должен быть не меньше 18 лет")]
     [MaxAge(100, ErrorMessage = "Возраст должен быть не больеш 100 лет")]
     public DateTime BirthDate { get; set; }

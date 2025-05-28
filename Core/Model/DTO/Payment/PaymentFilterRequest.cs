@@ -26,7 +26,7 @@ public class PaymentFilterRequest
     public DateTime? CreatedAtFrom { get; set; } = null;
     
     [DateValidation]
-    public DateTime? CreatedAtTo { get; set; } = DateTime.UtcNow;
+    public DateTime? CreatedAtTo { get; set; } = null;
     public DateTime? PaidAtFrom { get; set; } = null;
 
     [DateValidation]

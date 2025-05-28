@@ -33,11 +33,8 @@ namespace Core.Extensions
                     {
                         Id = i.Id,
                         ImageUrl = i.ImageUrl,
-                        EntityId = i.EntityId,
-                        CreatedAt = i.CreatedAt,
                         ImageType = i.ImageType,
-                        LocalOrderRank = i.LocalOrderRank,
-                        Entity = i.EntityTarget,
+                        LocalOrderRank = i.LocalOrderRank
                     }).ToList()
             });
         }

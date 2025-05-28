@@ -13,7 +13,6 @@ public class AttendeeUpdateRequest
     [Required]
     //Сделай валидацию даты чтобы максимум было 100 лет
     [DataType(DataType.Date)]
-    [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
     [MaxAge(100, ErrorMessage = "Возраст не должен превышать 100 лет")]
     public DateTime BirthDate { get; set; }
 

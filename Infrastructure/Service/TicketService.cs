@@ -271,7 +271,6 @@ public class TicketService
             PaymentAddRequest addRequest = new PaymentAddRequest
             {
                 BuyerId = request.UserId,
-                EventId = request.EventId,
                 Amount = reservedTicketIds.Count * eventEntity.Price,
                 TicketIds = reservedTicketIds
             };

@@ -28,6 +28,7 @@ namespace BackendApp.Controllers
 
         [HttpPost("user/{UserId:guid}")]
         [ValidateModel]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> AddUserEvent(Guid userId, [FromBody] UserCalendarAddEventRequest request)
         {
             var result = await _userEventCalendarService.AddUserCalendarEventAsync(userId, request);

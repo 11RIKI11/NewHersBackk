@@ -17,15 +17,11 @@ public class AttendeeFilterRequest
     public string? FullName { get; set; } = null;
 
     [DataType(DataType.Date)]
-    [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
     [MaxAge(100, ErrorMessage = "Возраст не должен превышать 100 лет")]
-    [DateValidation]
     public DateTime? BirthDateFrom { get; set; } = null;
 
     [DataType(DataType.Date)]
-    [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
     [MaxAge(100, ErrorMessage = "Возраст не должен превышать 100 лет")]
-    [DateValidation]
     public DateTime? BirthDateTo { get; set; } = null;
     public List<DocumentType> DocType { get; set; } = new List<DocumentType>();
     

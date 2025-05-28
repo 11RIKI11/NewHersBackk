@@ -1,5 +1,6 @@
 ﻿using Core.Enums;
 using Core.ValidateAttribute;
+using Core.ValidateAttribute.Date;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
@@ -21,5 +22,9 @@ public class UserUpdateRequest
     [EnumDataType(typeof(UserRoles))]
     public UserRoles? Role { get; set; } = null;
 
+    [DataType(DataType.Date)]
+    [MaxAge(100, ErrorMessage = "Возраст не должен превышать 100 лет")]
+    [MinAge(18, ErrorMessage = "Возраст не должен быть меньше 18 лет")]
+    public DateTime? BirthDate { get; set; } = null;
 
 }

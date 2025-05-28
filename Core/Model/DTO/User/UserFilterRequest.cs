@@ -25,12 +25,14 @@ public class UserFilterRequest
     public string? FullName { get; set; } = null;
     
     public List<UserRoles> Roles { get; set; } = new List<UserRoles>(); //Поменял на Enum
-    
-    [DateValidation]
+
+    [DataType(DataType.Date)]
+    [MaxAge(100, ErrorMessage = "Возраст не должен превышать 100 лет")]
     [MinAge(18, ErrorMessage = "Возраст не должен быть меньше 18 лет")]
     public DateTime? BirthDateFrom { get; set; } = null;
-    
-    [DateValidation]
+
+    [DataType(DataType.Date)]
+    [MaxAge(100, ErrorMessage = "Возраст не должен превышать 100 лет")]
     [MinAge(18, ErrorMessage = "Возраст не должен быть меньше 18 лет")]
     public DateTime? BirthDateTo { get; set; } = null;
     

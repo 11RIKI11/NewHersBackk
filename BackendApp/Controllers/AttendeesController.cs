@@ -55,6 +55,8 @@ namespace BackendApp.Controllers
 
         [HttpPost]
         [ValidateModel]
+        [ValidateToken]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> CreateAttendee([FromQuery]Guid userId, [FromBody] AttendeeAddRequest request) 
         {
             var result = await _attendeeService.CreateAttendeeAsync(userId, request);
