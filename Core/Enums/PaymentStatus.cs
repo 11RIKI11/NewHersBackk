@@ -2,8 +2,7 @@
 
 public enum PaymentStatus
 {
-    Pending,
-    WaitingForCapture,
+    WaitingForPayment,
     Succeeded,
     Canceled,
     Failed

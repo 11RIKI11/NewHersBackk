@@ -18,8 +18,8 @@ public class UserUpdateRequest
     [RegularExpression(@"^\+?[0-9]{10,15}$", ErrorMessage = "Phone number must be in a valid format.")]
     [StringLengthIfNotNull(15)]
     public string? Phone { get; set; } = null;
-    
-    [StringLengthIfNotNull(20)]
-    [RegularExpression(@"^(Admin|User|Manager)$", ErrorMessage = "Role must be either Admin, User, or Manager.")]
+    [EnumDataType(typeof(UserRoles))]
     public UserRoles? Role { get; set; } = null;
+
+
 }

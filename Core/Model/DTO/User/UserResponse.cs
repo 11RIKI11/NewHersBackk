@@ -9,5 +9,6 @@ public class UserResponse
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public UserRoles Role { get; set; } = UserRoles.User;
+    public DateTime BirthDate { get; set; }
 }
 

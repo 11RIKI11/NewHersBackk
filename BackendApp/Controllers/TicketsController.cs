@@ -1,4 +1,5 @@
 ﻿using Core.Attribute;
+using Core.Model.DTO.Attendee;
 using Core.Model.DTO.Ticket;
 using Infrastructure.Service;
 using Microsoft.AspNetCore.Authorization;
@@ -74,19 +75,43 @@ namespace BackendApp.Controllers
             return NoContent();
         }
 
-        [HttpPost("reserve/{eventId:guid}")]
+        [HttpPost("reserve/{EventId:guid}")]
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "user")]
-        public async Task<IActionResult> ReserveTicket(Guid eventId)
+        public async Task<IActionResult> ReserveTicket(Guid eventId, [FromBody] List<AttendeeAddRequest> requests)
         {
-            var result = await _ticketService.ReserveTicketAsync(UserId.Value, eventId);
+            var request = new ReserveTicketRequest
+            {
+                UserId = UserId.Value,
+                EventId = eventId,
+                Attendees = requests
+            };
+            var result = await _ticketService.ReserveTicketAsync(request);
             if (!result.IsSuccess)
                 return NotFoundResponse(result.Error.ErrorMessage);
             return OkResponse(result.Data);
         }
 
-        [HttpGet("available/{eventId:guid}")]
+        [HttpPost("reserved/admin/by-event/{eventId:guid}/by-user/{userId:guid}")]
+        [ValidateModel]
+        [ValidateToken]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> ReserveTicketAdmin(Guid eventId, Guid userId, [FromBody] List<AttendeeAddRequest> requests)
+        {
+            var request = new ReserveTicketRequest
+            {
+                UserId = userId,
+                EventId = eventId,
+                Attendees = requests
+            };
+            var result = await _ticketService.ReserveTicketAsync(request);
+            if (!result.IsSuccess)
+                return NotFoundResponse(result.Error.ErrorMessage);
+            return OkResponse(result.Data);
+        }
+
+        [HttpGet("available/{EventId:guid}")]
         public async Task<IActionResult> GetAvailableTicketsCount(Guid eventId)
         {
             var result = await _ticketService.GetAvailableTicketsCountAsync(eventId);
@@ -95,13 +120,13 @@ namespace BackendApp.Controllers
             return OkResponse(result.Data);
         }
 
-        [HttpPost("cancel-reserve/{eventId:guid}")]
+        [HttpPost("cancel-reserve/{EventId:guid}")]
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "user")]
         public async Task<IActionResult> CancelReserveTicket(Guid eventId)
         {
-            var result = await _ticketService.CancelReserveTicketAsync(UserId.Value, eventId);
+            var result = await _ticketService.CancelReserveTicketsAsync(UserId.Value, eventId);
             if (!result.IsSuccess)
                 return NotFoundResponse(result.Error.ErrorMessage);
             return NoContentResponse();

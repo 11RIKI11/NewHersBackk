@@ -1,4 +1,5 @@
 ﻿using Core.ValidateAttribute;
+using Core.ValidateAttribute.Date;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
@@ -22,6 +23,12 @@ public class RegisterRequest : IValidatableObject
     [RegularExpression(@"^\+?[0-9]{10,15}$",
         ErrorMessage = "Phone number must start with +7 or 8 and contain 11 digits.")]
     public string Phone { get; set; }
+
+    [Required(ErrorMessage = "Birthdate is required")]
+    [DateValidation]
+    [MinAge(18, ErrorMessage = "Возраст должен быть не меньше 18 лет")]
+    [MaxAge(100, ErrorMessage = "Возраст должен быть не больеш 100 лет")]
+    public DateTime BirthDate { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

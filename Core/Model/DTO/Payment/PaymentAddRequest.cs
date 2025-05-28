@@ -7,12 +7,13 @@ public class PaymentAddRequest : IValidatableObject
 {
     [Required(ErrorMessage = "Buyer ID is required.")]
     public Guid BuyerId { get; set; }
+    public Guid EventId { get; set; }
     
     [Required(ErrorMessage = "Amount is required.")]
     [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0.")]
     public decimal Amount { get; set; }
     
-    [Required(ErrorMessage = "Ticket IDs are required.")]
+    [Required(ErrorMessage = "Attendee IDs are required.")]
     public List<Guid> TicketIds { get; set; } = new List<Guid>();
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

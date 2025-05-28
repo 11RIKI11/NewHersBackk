@@ -27,8 +27,6 @@ public class AttendeeFilterRequest
     [MaxAge(100, ErrorMessage = "Возраст не должен превышать 100 лет")]
     [DateValidation]
     public DateTime? BirthDateTo { get; set; } = null;
-
-    //[EnumDataType(typeof(DocumentType))]
     public List<DocumentType> DocType { get; set; } = new List<DocumentType>();
     
     [StringLengthIfNotNull(20)]

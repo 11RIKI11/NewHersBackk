@@ -19,11 +19,15 @@ public class TicketService
 {
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly PaymentService _paymentService;
+    private readonly AttendeeService _attendeeService;
 
-    public TicketService(ApplicationDbContext context, IMapper mapper)
+    public TicketService(ApplicationDbContext context, IMapper mapper, PaymentService paymentService, AttendeeService attendeeService)
     {
         _context = context;
         _mapper = mapper;
+        _paymentService = paymentService;
+        _attendeeService = attendeeService;
     }
 
     // Получить билет по Id
@@ -31,7 +35,6 @@ public class TicketService
     {
         var ticketEntity = await _context.Tickets
             .Include(t => t.Attendee)
-            .Include(t => t.Buyer)
             .Include(t => t.Event)
             .Include(t => t.Payment)
             .FirstOrDefaultAsync(t => t.Id == id);
@@ -46,10 +49,9 @@ public class TicketService
 
         var ticketEntities = _context.Tickets
             .Include(t => t.Attendee)
-            .Include(t => t.Buyer)
             .Include(t => t.Event)
             .Include(t => t.Payment)
-            .Where(t => t.BuyerId == userId);
+            .Where(t => t.Payment == null ? true : t.Payment.BuyerId == userId);
         var totalCount = await ticketEntities.CountAsync();
         var tickets = await ticketEntities
             .Paginate(pag.Page, pag.PageSize)
@@ -67,7 +69,6 @@ public class TicketService
     {
         var ticketEntities = _context.Tickets
             .Include(t => t.Attendee)
-            .Include(t => t.Buyer)
             .Include(t => t.Event)
             .Include(t => t.Payment)
             .Where(t => t.EventId == eventId);
@@ -92,7 +93,6 @@ public class TicketService
         {
             EventId = ticketRequest.EventId,
             QRCode = string.Empty,//автомат генерация qrCode todo
-            Status = TicketStatus.Available.ToString().ToLower()
         };
 
         await _context.Tickets.AddAsync(ticketEntity);
@@ -111,7 +111,6 @@ public class TicketService
             {
                 EventId = request.EventId,
                 QRCode = string.Empty,//автомат генерация qrCode todo
-                Status = TicketStatus.Available.ToString().ToLower()
             });
         }
 
@@ -135,18 +134,12 @@ public class TicketService
         if (ticketEntity == null)
             return ServiceResult<bool>.Failure("Билет с таким Id не найден", 404);
 
-        ticketEntity.Status = request.Status.ToString().ToLower();
         //Без обновления кьюаркода?
-        //if (request.ContactPhone != null)
-        //    ticketEntity.ContactPhone = request.ContactPhone;
+
         if (request.AttendeeId == null)
             ticketEntity.AttendeeId = request.AttendeeId;
         else
             ticketEntity.AttendeeId = request.AttendeeId.Value;
-        if (request.BuyerId == null)
-            ticketEntity.BuyerId = request.BuyerId;
-        else
-            ticketEntity.BuyerId = request.BuyerId.Value;
         if (request.PaymentId == null)
             ticketEntity.PaymentId = request.PaymentId;
         else
@@ -175,7 +168,6 @@ public class TicketService
     {
         var query = _context.Tickets
             .Include(t => t.Attendee)
-            .Include(t => t.Buyer)
             .Include(t => t.Event)
             .Include(t => t.Payment)
             .AsQueryable();
@@ -194,8 +186,8 @@ public class TicketService
 
         if (request.Filter.BuyerIds.Count > 0)
             query = query
-                .Where(t => t.BuyerId != null)
-                .Where(t => request.Filter.BuyerIds.Contains(t.BuyerId.Value));
+                .Where(t => t.Payment != null)
+                .Where(t => request.Filter.BuyerIds.Contains(t.Payment.BuyerId));
 
         if (request.Filter.PaymentIds.Count > 0)
             query = query
@@ -203,13 +195,13 @@ public class TicketService
                 .Where(t => request.Filter.PaymentIds.Contains(t.PaymentId.Value));
 
         if (!string.IsNullOrEmpty(request.Filter.BuyerName))
-            query = query.Where(a =>
-            EF.Functions.ILike(a.Buyer.FullName, $"{request.Filter.BuyerName}%") ||
-            EF.Functions.ILike(a.Buyer.FullName, $" %{request.Filter.BuyerName}")
+            query = query.Where(a => a.Payment == null ? true :
+            EF.Functions.ILike(a.Payment.Buyer.FullName, $"{request.Filter.BuyerName}%") ||
+            EF.Functions.ILike(a.Payment.Buyer.FullName, $" %{request.Filter.BuyerName}")
             );
 
         if (!string.IsNullOrEmpty(request.Filter.AttendeeName))
-            query = query.Where(a =>
+            query = query.Where(a => a.Attendee == null ? true :
             EF.Functions.ILike(a.Attendee.FullName, $"{request.Filter.AttendeeName}%") ||
             EF.Functions.ILike(a.Attendee.FullName, $" %{request.Filter.AttendeeName}")
             );
@@ -229,52 +221,103 @@ public class TicketService
         return ServiceResult<SearchResultResponse<TicketResponse>>.Success(result);
     }
 
-    public async Task<ServiceResult<Guid>> ReserveTicketAsync(Guid userId, Guid eventId)
+
+    public async Task<ServiceResult<List<Guid>>> ReserveTicketAsync(ReserveTicketRequest request)
     {
-        var eventEntity = await _context.Events.FindAsync(eventId);
+        var eventEntity = await _context.Events.FirstOrDefaultAsync(e => e.Id == request.EventId);
         if (eventEntity == null)
-            return ServiceResult<Guid>.Failure("Мероприятие не найдено", 404);
-        if (eventEntity.StartTime < DateTime.UtcNow || eventEntity.EndTime < DateTime.UtcNow)
-            return ServiceResult<Guid>.Failure("Переиод бронирования билетов завершился", 409);
-        var ticket = await _context.Tickets.Where(t => t.EventId == eventId &&( t.Status == TicketStatus.Available.ToString().ToLower()
-        || t.Status == TicketStatus.Available.ToString())).FirstOrDefaultAsync();
-        if (ticket == null)
-            return ServiceResult<Guid>.Failure("Свободных билетов на это событие не найдено", 409);
-        ticket.Status = TicketStatus.Reserved.ToString().ToLower();
-        ticket.BuyerId = userId;
-        _context.Tickets.Update(ticket);
+        {
+            return ServiceResult<List<Guid>>.Failure("Событие не найдено", 404);
+        }
+        var tickets = await _context.Tickets
+            .Include(t => t.Payment)
+            .Where(t => t.EventId == request.EventId && t.Payment == null)
+            .ToListAsync();
+        if (tickets.Count() < request.Attendees.Count)
+            return ServiceResult<List<Guid>>.Failure("Свободных билетов нет или недостаточно", 404);
+        List<AttendeeResponse> attendeeList = new List<AttendeeResponse>();
+        var attendeeCreateResult = await _attendeeService.CreateAttendeeRangeAsync(request.UserId, request.Attendees);
+        if (!attendeeCreateResult.IsSuccess)
+        {
+            return ServiceResult<List<Guid>>.Failure("Ошибка при создании посетителя: "
+                + attendeeCreateResult.Error.ErrorMessage, attendeeCreateResult.Error.StatusCode);
+        }
+        attendeeList = attendeeCreateResult.Data;
+
+        var reservedTicketIds = new List<Guid>();
+        for (int i = 0; i < attendeeList.Count; i++)
+        {
+            var ticket = tickets[i];
+            var attendee = attendeeList[i];
+
+            ticket.AttendeeId = attendee.Id;
+            reservedTicketIds.Add(ticket.Id);
+        }
+
+        var reserveTicket = await _context.Tickets
+            .FirstOrDefaultAsync(t => t.EventId == request.EventId && t.Payment != null
+            && t.Payment.Status.ToLower() == PaymentStatus.WaitingForPayment.ToString().ToLower()
+            && t.Payment.BuyerId == request.UserId);
+        if (reserveTicket != null)
+        {
+            foreach (var ticket in tickets)
+            {
+                ticket.Payment = reserveTicket.Payment;
+                ticket.Payment.Amount += eventEntity.Price;
+            }
+        }
+        else
+        {
+            PaymentAddRequest addRequest = new PaymentAddRequest
+            {
+                BuyerId = request.UserId,
+                EventId = request.EventId,
+                Amount = reservedTicketIds.Count * eventEntity.Price,
+                TicketIds = reservedTicketIds
+            };
+            await _paymentService.CreatePaymentAsync(addRequest);
+        }
         await _context.SaveChangesAsync();
-        return ServiceResult<Guid>.Success(ticket.Id);
+        return ServiceResult<List<Guid>>.Success(reservedTicketIds);
     }
 
     public async Task<ServiceResult<int>> GetAvailableTicketsCountAsync(Guid eventId)
     {
-        var count = await _context.Tickets.Where(t => t.EventId == eventId && (t.Status == TicketStatus.Available.ToString().ToLower() 
-        || t.Status == TicketStatus.Available.ToString())).CountAsync();
+        var count = await _context.Tickets.Where(t => t.EventId == eventId && t.Payment == null).CountAsync();
         return ServiceResult<int>.Success(count);
     }
 
-    public async Task<ServiceResult<bool>> CancelReserveTicketAsync(Guid userId, Guid eventId)
+    public async Task<ServiceResult<bool>> CancelReserveTicketsAsync(Guid userId, Guid eventId)
     {
+        // Проверяем существование мероприятия
         var eventEntity = await _context.Events.FindAsync(eventId);
         if (eventEntity == null)
             return ServiceResult<bool>.Failure("Мероприятие не найдено", 404);
-        if (eventEntity.StartTime < DateTime.UtcNow || eventEntity.EndTime < DateTime.UtcNow)
-            return ServiceResult<bool>.Failure("Переиод бронирования билетов завершился", 409);
 
-        var tickets = await _context.Tickets
-            .Where(t => t.EventId == eventId && (t.Status ==TicketStatus.Reserved.ToString().ToLower() 
-            || t.Status == TicketStatus.Reserved.ToString()) && t.BuyerId == userId)
-            .ToListAsync();
-        if (tickets == null || tickets.Count == 0)
-            return ServiceResult<bool>.Failure("Билеты не найдены", 404);
-        foreach (var ticket in tickets)
+        // Проверяем, не истекло ли время для отмены
+        if (eventEntity.StartTime < DateTime.UtcNow || eventEntity.EndTime < DateTime.UtcNow)
+            return ServiceResult<bool>.Failure("Период бронирования билетов завершился", 409);
+
+        // Находим платеж пользователя
+        var payment = await _context.Payments
+            .Include(p => p.Tickets)
+            .FirstOrDefaultAsync(p => p.BuyerId == userId 
+                && p.Tickets.Any(t => t.EventId == eventId)
+                && p.Status.ToLower() == PaymentStatus.WaitingForPayment.ToString().ToLower());
+
+        if (payment == null)
+            return ServiceResult<bool>.Failure("Бронирование не найдено", 404);
+
+        // Очищаем данные для всех билетов в платеже
+        foreach (var ticket in payment.Tickets)
         {
-            ticket.Status = TicketStatus.Available.ToString().ToLower();
-            ticket.BuyerId = null;
+            ticket.AttendeeId = null;
+            ticket.PaymentId = null;
         }
 
-        _context.Tickets.UpdateRange(tickets);
+        // Удаляем платеж
+        _context.Payments.Remove(payment);
+        
         await _context.SaveChangesAsync();
         return ServiceResult<bool>.Success();
     }

@@ -176,8 +176,7 @@ public class EventService
         if (eventEntity.TicketsCount > request.TicketCount)
         {
             var ticketsToRemove = await _context.Tickets
-                .Where(t => t.EventId == eventEntity.Id && (t.Status == TicketStatus.Available.ToString().ToLower() ||
-                t.Status == TicketStatus.Available.ToString()))
+                .Where(t => t.EventId == eventEntity.Id && ((t.Payment == null ? true : t.Payment.Status.ToString().ToLower() == TicketStatus.Available.ToString().ToLower())))
                 .Take(request.TicketCount)
                 .ToListAsync();
             if (ticketsToRemove.Count > 0)

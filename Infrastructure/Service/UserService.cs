@@ -66,10 +66,14 @@ public class UserService
         }
 
         if (request.Filter.CreatedAtFrom != null)
-            query = query.Where(u => u.CreatedAt >= request.Filter.CreatedAtFrom.Value && 
-            u.CreatedAt <= request.Filter.CreatedAtTo);
-        else
+            query = query.Where(u => u.CreatedAt >= request.Filter.CreatedAtFrom);
+        if(request.Filter.CreatedAtTo != null)
             query = query.Where(u => u.CreatedAt <= request.Filter.CreatedAtTo);
+
+        if (request.Filter.BirthDateFrom != null)
+            query = query.Where(u => u.BirthDate >= request.Filter.BirthDateFrom);
+        if (request.Filter.BirthDateTo != null)
+            query = query.Where(u => u.BirthDate <= request.Filter.BirthDateTo);
 
         query = SortingHelper.ApplySorting(query, request.Sort);
 

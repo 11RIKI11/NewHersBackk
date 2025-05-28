@@ -29,6 +29,9 @@ public class User
     [Required]
     public DateTime CreatedAt { get; set; }
 
+    [Required] 
+    public DateTime BirthDate { get; set; }
+
     public ICollection<Ticket> Tickets { get; set; }
 
     public ICollection<UserEventCalendar> Calendars { get; set; }

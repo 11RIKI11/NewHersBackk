@@ -26,31 +26,41 @@ public class PaymentService
     public async Task<ServiceResult<PaymentResponse>> CreatePaymentAsync(PaymentAddRequest request)
     {
         var payment = _mapper.Map<Payment>(request);
-        //var paymentTickets = new List<PaymentTicket>();
+        
         var tickets = await _context.Tickets
+            .Include(t => t.Payment)
             .Where(t => request.TicketIds.Contains(t.Id))
             .ToListAsync();
 
-        foreach (var ticketId in request.TicketIds)
+        // Проверяем что все запрошенные билеты существуют
+        if (tickets.Count != request.TicketIds.Count)
         {
-            var ticket = await _context.Tickets.FindAsync(ticketId);
-            if (ticket == null)
-                return ServiceResult<PaymentResponse>.Failure($"Ticket with ID {ticketId} not found", 404);
-            if(ticket.BuyerId != request.BuyerId)
-                return ServiceResult<PaymentResponse>.Failure($"Ticket with ID {ticketId} with other user", 409);
+            var foundTicketIds = tickets.Select(t => t.Id);
+            var missingTicketIds = request.TicketIds.Except(foundTicketIds);
+            return ServiceResult<PaymentResponse>.Failure(
+                $"Tickets with IDs {string.Join(", ", missingTicketIds)} not found", 404);
+        }
+
+        // Проверяем что ни один из билетов не привязан к другому платежу
+        var ticketsWithPayment = tickets.Where(t => t.Payment != null).ToList();
+        if (ticketsWithPayment.Any())
+        {
+            return ServiceResult<PaymentResponse>.Failure(
+                $"Tickets with IDs {string.Join(", ", ticketsWithPayment.Select(t => t.Id))} already have payment", 409);
+        }
+
+        // Привязываем билеты к платежу
+        foreach (var ticket in tickets)
+        {
             ticket.Payment = payment;
         }
 
         await _context.Payments.AddAsync(payment);
-        //await _context.PaymentTickets.AddRangeAsync(paymentTickets);
-
         await _context.SaveChangesAsync();
 
         var response = _mapper.Map<PaymentResponse>(payment);
-        //response.TicketIds = request.TicketIds;
         return ServiceResult<PaymentResponse>.Success(response);
     }
-    //List билетов и для каждого креейтим свою оплату
 
     public async Task<ServiceResult<PaymentResponse>> GetPaymentByIdAsync(Guid id)
     {
@@ -60,11 +70,6 @@ public class PaymentService
 
         if (payment == null)
             return ServiceResult<PaymentResponse>.Failure("Оплата не найдена", 404);
-
-        //var paymentTickets = await _context.PaymentTickets
-         //   .Where(pt => pt.PaymentId == id)
-         //   .Select(pt => pt.TicketId)
-         //   .ToListAsync();
 
         var response = _mapper.Map<PaymentResponse>(payment);
 
@@ -105,7 +110,6 @@ public class PaymentService
 
         if (payment == null)
             return ServiceResult<bool>.Failure("Payment not found", 404);
-
         payment.Status = request.Status.ToString().ToLower();
         payment.PaidAt = request.PaidAt;
         payment.QrUrl = request.QrUrl;

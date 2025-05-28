@@ -70,7 +70,7 @@ namespace BackendApp.Mappers
             CreateMap<PaymentAddRequest, Payment>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => Core.Enums.PaymentStatus.WaitingForCapture));
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => Core.Enums.PaymentStatus.WaitingForPayment));
 
             CreateMap<PaymentUpdateRequest, Payment>();
             

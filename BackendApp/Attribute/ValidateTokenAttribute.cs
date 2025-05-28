@@ -32,11 +32,11 @@ namespace Core.Attribute
                     return;
                 }
 
-                // Извлекаем userId из токена
+                // Извлекаем UserId из токена
                 var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "nameid");
                 if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out _))
                 {
-                    context.Result = new UnauthorizedObjectResult(ApiResponse.Failure("Invalid token: userId is missing or invalid", 401));
+                    context.Result = new UnauthorizedObjectResult(ApiResponse.Failure("Invalid token: UserId is missing or invalid", 401));
                     Console.WriteLine("123");
                     return;
                 }

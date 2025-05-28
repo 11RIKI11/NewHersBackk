@@ -18,21 +18,14 @@ public class Ticket
     public Guid EventId { get; set; }
     public Event Event { get; set; }
 
-    [ForeignKey("Buyer")]
-    public Guid? BuyerId { get; set; }
-    public User Buyer { get; set; }
-
     [ForeignKey("Attendee")]
     public Guid? AttendeeId { get; set; }
-    public Attendee Attendee { get; set; }
+    public Attendee? Attendee { get; set; }
 
     [ForeignKey("Payment")]
     public Guid? PaymentId { get; set; }
-    public Payment Payment { get; set; }
+    public Payment? Payment { get; set; }
 
     [Required]
     public string QRCode { get; set; }
-
-    [Required]
-    public string Status { get; set; }
 }

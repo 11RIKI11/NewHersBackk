@@ -24,7 +24,6 @@ public class AttendeeAddRequest
     [Required]
     [StringLength(20, ErrorMessage = "Номер документа не должен превышать 20 символов")]
     public string DocumentNumber { get; set; } = string.Empty;
-    public Guid? UserId { get; set; } = null;
     [Required]
     public Guid TicketId { get; set; }
 }

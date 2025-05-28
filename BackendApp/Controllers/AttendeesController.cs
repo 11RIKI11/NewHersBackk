@@ -55,11 +55,9 @@ namespace BackendApp.Controllers
 
         [HttpPost]
         [ValidateModel]
-        public async Task<IActionResult> CreateAttendee([FromBody] AttendeeAddRequest request) 
+        public async Task<IActionResult> CreateAttendee([FromQuery]Guid userId, [FromBody] AttendeeAddRequest request) 
         {
-            if(request.UserId == null)
-                return BadRequestResponse("UserId is null");
-            var result = await _attendeeService.CreateAttendeeAsync(request);
+            var result = await _attendeeService.CreateAttendeeAsync(userId, request);
             if (!result.IsSuccess) 
                 return BadRequestResponse(result.Error.ErrorMessage);
             return OkResponse(result.Data);
@@ -71,14 +69,13 @@ namespace BackendApp.Controllers
         [Authorize(Roles = "user")]
         public async Task<IActionResult> CreateAttendeeSelf([FromBody] AttendeeAddRequest request) 
         {
-            request.UserId = UserId.Value;
-            var result = await _attendeeService.CreateAttendeeAsync(request);
+            var result = await _attendeeService.CreateAttendeeAsync(UserId.Value, request);
             if (!result.IsSuccess)
                 return BadRequestResponse(result.Error.ErrorMessage);
             return OkResponse(result.Data);
         }
 
-        [HttpPost("me/search/by-event/{eventId:guid}")]
+        [HttpPost("me/search/by-event/{EventId:guid}")]
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "user")]

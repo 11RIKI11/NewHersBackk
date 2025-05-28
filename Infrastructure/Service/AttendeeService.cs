@@ -15,13 +15,11 @@ public class AttendeeService
 {
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
-    private readonly TicketService _ticketsServise;
 
-    public AttendeeService(ApplicationDbContext context, IMapper mapper, TicketService ticketService)
+    public AttendeeService(ApplicationDbContext context, IMapper mapper)
     {
         _context = context;
         _mapper = mapper;
-        _ticketsServise = ticketService;
     }
 
     public async Task<ServiceResult<AttendeeResponse>> GetAttendeeById(Guid id)
@@ -58,8 +56,6 @@ public class AttendeeService
 
         if (!string.IsNullOrEmpty(request.Filter.DocNumber))
             query = query.Where(a => EF.Functions.ILike(a.DocumentNumber, $"{request.Filter.DocNumber}%"));
-
-
 
         query = SortingHelper.ApplySorting(query, request.Sort);
 
@@ -123,54 +119,106 @@ public class AttendeeService
         return ServiceResult<bool>.Success();
     }
 
-    public async Task<ServiceResult<AttendeeResponse>> CreateAttendeeAsync(AttendeeAddRequest request)
+    public async Task<ServiceResult<AttendeeResponse>> CreateAttendeeAsync(Guid userId, AttendeeAddRequest request)
     {
-        //Проверь что посетителя с такими паспортными данными нет
-        var attendee = await _context.Attendees
-            .FirstOrDefaultAsync(a => a.DocumentNumber == request.DocumentNumber);
-        if (attendee == null)
+        // Проверь, что посетителя с такими паспортными данными нет
+        var userAttendees = await _context.UserAttendees
+            .Include(ua => ua.User)
+            .Include(ua => ua.Attendee)
+            .Where(ua => ua.UserId == userId && ua.Attendee.DocumentNumber == request.DocumentNumber)
+            .FirstOrDefaultAsync();
+        AttendeeResponse mappingAttendee;
+        if (userAttendees != null)
         {
-            attendee = _mapper.Map<Attendee>(request);
-            attendee.CreatedAt = DateTime.UtcNow;
-            await _context.Attendees.AddAsync(attendee);
-            await _context.SaveChangesAsync();
+            mappingAttendee = _mapper.Map<AttendeeResponse>(userAttendees.Attendee);
+            return ServiceResult<AttendeeResponse>.Success(mappingAttendee);
+        }
+        var attendee = _mapper.Map<Attendee>(request);
+        attendee.CreatedAt = DateTime.UtcNow;
+        await _context.Attendees.AddAsync(attendee);
+        await _context.SaveChangesAsync();
+
+        // Вынесено в отдельный метод
+        var linkResult = await CreateUserAttendeeLinkAsync(userId, attendee.Id);
+        if (!linkResult.IsSuccess)
+            return ServiceResult<AttendeeResponse>.Failure("Не удалось создать связь пользователь-посетитель");
+
+        mappingAttendee = _mapper.Map<AttendeeResponse>(attendee);
+        return ServiceResult<AttendeeResponse>.Success(mappingAttendee);
+    }
+
+    public async Task<ServiceResult<List<AttendeeResponse>>> CreateAttendeeRangeAsync(Guid userId, List<AttendeeAddRequest> requests)
+    {
+        var responses = new List<AttendeeResponse>();
+        
+        // Получаем все существующие записи по номерам документов
+        var documentNumbers = requests.Select(r => r.DocumentNumber).ToList();
+        var existingAttendees = await _context.UserAttendees
+            .Include(ua => ua.Attendee)
+            .Where(ua => ua.UserId == userId && documentNumbers.Contains(ua.Attendee.DocumentNumber))
+            .ToListAsync();
+
+        // Обрабатываем существующих посетителей
+        foreach (var existing in existingAttendees)
+        {
+            responses.Add(_mapper.Map<AttendeeResponse>(existing.Attendee));
+            requests.RemoveAll(r => r.DocumentNumber == existing.Attendee.DocumentNumber);
         }
 
-        UserAttendee? userAttendee = null;
-        if (request.UserId != null)
-            userAttendee = await _context.UserAttendees.
-                FirstOrDefaultAsync(ua => ua.UserId == request.UserId &&
-                ua.AttendeeId == attendee.Id);
+        if (!requests.Any())
+            return ServiceResult<List<AttendeeResponse>>.Success(responses);
+
+        // Создаем новых посетителей
+        var newAttendees = requests.Select(request =>
+        {
+            var attendee = _mapper.Map<Attendee>(request);
+            attendee.CreatedAt = DateTime.UtcNow;
+            return attendee;
+        }).ToList();
+
+        await _context.Attendees.AddRangeAsync(newAttendees);
+        await _context.SaveChangesAsync();
+
+        // Создаем связи пользователь-посетитель
+        var userAttendees = newAttendees.Select(attendee => new UserAttendee
+        {
+            UserId = userId,
+            AttendeeId = attendee.Id
+        });
+
+        await _context.UserAttendees.AddRangeAsync(userAttendees);
+        await _context.SaveChangesAsync();
+
+        // Добавляем новых посетителей в ответ
+        responses.AddRange(_mapper.Map<List<AttendeeResponse>>(newAttendees));
+
+        return ServiceResult<List<AttendeeResponse>>.Success(responses);
+    }
+
+    private async Task<ServiceResult<bool>> CreateUserAttendeeLinkAsync(Guid userId, Guid attendeeId)
+    {
+        var userAttendee = await _context.UserAttendees
+            .FirstOrDefaultAsync(ua => ua.UserId == userId && ua.AttendeeId == attendeeId);
 
         if (userAttendee == null)
         {
             userAttendee = new UserAttendee
             {
-                UserId = request.UserId.Value,
-                AttendeeId = attendee.Id
+                UserId = userId,
+                AttendeeId = attendeeId
             };
+            await _context.UserAttendees.AddAsync(userAttendee);
+            await _context.SaveChangesAsync();
         }
 
-        var ticket = await _context.Tickets
-            .FirstOrDefaultAsync(t => t.Id == request.TicketId);
-        if (ticket == null)
-            return ServiceResult<AttendeeResponse>.Failure("Билет с таким Id не найден", 404);
-        if (request.UserId != null)
-        {
-            ServiceResult<Guid> reserveResult = await _ticketsServise.ReserveTicketAsync(request.UserId.Value, ticket.EventId);
-            if (!reserveResult.IsSuccess)
-                return ServiceResult<AttendeeResponse>.Failure("Не удалось зарезервировать билет. " + reserveResult.Error.ErrorMessage, reserveResult.Error.StatusCode);
-            ticket.AttendeeId = attendee.Id;
-        }
-
-        var mappingAttendee = _mapper.Map<AttendeeResponse>(attendee);
-        return ServiceResult<AttendeeResponse>.Success(mappingAttendee);
+        return ServiceResult<bool>.Success(true);
     }
 
     public async Task<ServiceResult<SearchResultResponse<AttendeeResponse>>> GetAttendeesByUserByEventAsync(Guid userId, Guid eventId, AttendeeSearchRequest request)
     {
         var ticketAttendees = await _context.Tickets
-            .Where(t => t.EventId == eventId && t.BuyerId == userId)
+            .Include(t => t.Payment)
+            .Where(t => t.EventId == eventId && t.Payment == null ? true : t.Payment.BuyerId == userId)
             .Select(t => t.AttendeeId)
             .ToListAsync();
         var attendees = await _context.Attendees
