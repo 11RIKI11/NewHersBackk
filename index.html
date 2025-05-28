@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API ������������</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { display: grid; grid-template-columns: 250px 1fr; gap: 20px; }
+        .endpoints { border-right: 1px solid #ccc; padding-right: 20px; }
+        .endpoint { cursor: pointer; padding: 5px; margin: 5px 0; }
+        .endpoint:hover { background: #f0f0f0; }
+        .active { background: #e0e0e0; }
+        textarea { width: 100%; height: 200px; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; }
+        #response { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="endpoints">
+            <h3>�����������</h3>
+            <div class="endpoint" data-method="POST" data-url="/api/v1/auth/login">����</div>
+            <div class="endpoint" data-method="POST" data-url="/api/v1/auth/register">�����������</div>
+
+            <h3>�������</h3>
+            <div class="endpoint" data-method="POST" data-url="/api/v1/events/search">����� �������</div>
+            <div class="endpoint" data-method="POST" data-url="/api/v1/events">������� �������</div>
+
+            <h3>������</h3>
+            <div class="endpoint" data-method="POST" data-url="/api/v1/tickets/search">����� �������</div>
+            <div class="endpoint" data-method="POST" data-url="/api/v1/tickets/reserve">������������� �����</div>
+
+            <h3>�������</h3>
+            <div class="endpoint" data-method="POST" data-url="/api/v1/payments">������� ������</div>
+            <div class="endpoint" data-method="POST" data-url="/api/v1/payments/search">����� ��������</div>
+        </div>
+        <div class="content">
+            <div>
+                <label>Token: <input type="text" id="token" style="width: 500px;"></label>
+            </div>
+            <h3>Request:</h3>
+            <div>
+                <label>URL: <input type="text" id="url" style="width: 500px;"></label>
+                <select id="method">
+                    <option>GET</option>
+                    <option>POST</option>
+                    <option>PUT</option>
+                    <option>DELETE</option>
+                </select>
+            </div>
+            <textarea id="request"></textarea>
+            <button onclick="sendRequest()">���������</button>
+            <h3>Response:</h3>
+            <pre id="response"></pre>
+        </div>
+    </div>
+
+    <script>
+        const endpoints = {
+            // �����������
+            '/api/v1/auth/login': {
+                method: 'POST',
+                body: {
+                    "email": "user1@mail.com",
+                    "password": "password123"
+                }
+            },
+            '/api/v1/auth/register': {
+                method: 'POST',
+                body: {
+                    "fullName": "�������� ������������",
+                    "email": "test@mail.com",
+                    "password": "Password123!",
+                    "phone": "+79001234567"
+                }
+            },
+            // �������
+            '/api/v1/events/search': {
+                method: 'POST',
+                body: {
+                    "filter": {
+                        "title": ["�������"],
+                        "location": ["������"],
+                        "minPrice": 100,
+                        "maxPrice": 5000,
+                        "dateFrom": "2025-05-28T00:00:00",
+                        "dateTo": "2025-12-31T23:59:59"
+                    },
+                    "sort": [
+                        {
+                            "sortBy": "startTime",
+                            "sortDirection": "asc"
+                        }
+                    ],
+                    "pagination": {
+                        "page": 1,
+                        "pageSize": 10
+                    }
+                }
+            },
+            '/api/v1/events': {
+                method: 'POST',
+                body: {
+                    "title": "������ ������� 2025",
+                    "description": "������� ������ ������� ������������ ������",
+                    "location": "���������� ���, ������",
+                    "startDate": "2025-06-15T19:00:00",
+                    "endDate": "2025-06-15T22:00:00",
+                    "ticketCount": 100,
+                    "price": 1500,
+                    "tag": "concert"
+                }
+            },
+            // ������
+            '/api/v1/tickets/search': {
+                method: 'POST',
+                body: {
+                    "filter": {
+                        "status": ["Available", "Reserved"],
+                        "eventIds": []
+                    },
+                    "pagination": {
+                        "page": 1,
+                        "pageSize": 10
+                    }
+                }
+            },
+            '/api/v1/tickets/reserve': {
+                method: 'POST',
+                body: {
+                    "eventId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                }
+            },
+            // �������
+            '/api/v1/payments': {
+                method: 'POST',
+                body: {
+                    "buyerId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                    "amount": 3000,
+                    "ticketIds": [
+                        "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    ]
+                }
+            },
+            '/api/v1/payments/search': {
+                method: 'POST',
+                body: {
+                    "filter": {
+                        "minAmount": 100,
+                        "maxAmount": 5000,
+                        "status": ["WaitingForCapture", "Succeeded"],
+                        "createdAtFrom": "2025-01-01T00:00:00",
+                        "createdAtTo": "2025-12-31T23:59:59"
+                    },
+                    "sort": [
+                        {
+                            "sortBy": "createdAt",
+                            "sortDirection": "desc"
+                        }
+                    ],
+                    "pagination": {
+                        "page": 1,
+                        "pageSize": 10
+                    }
+                }
+            }
+        };
+
+        document.querySelectorAll('.endpoint').forEach(el => {
+            el.addEventListener('click', () => {
+                const url = el.dataset.url;
+                document.getElementById('url').value = url;
+                document.getElementById('method').value = endpoints[url].method;
+                document.getElementById('request').value = JSON.stringify(endpoints[url].body, null, 2);
+                
+                document.querySelectorAll('.endpoint').forEach(e => e.classList.remove('active'));
+                el.classList.add('active');
+            });
+        });
+
+        async function sendRequest() {
+            const url = document.getElementById('url').value;
+            const method = document.getElementById('method').value;
+            const token = document.getElementById('token').value;
+            const body = document.getElementById('request').value;
+
+            try {
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: headers,
+                    body: method !== 'GET' ? body : undefined
+                });
+
+                const data = await response.json();
+                document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('response').textContent = error.message;
+            }
+        }
+    </script>
+</body>
+</html>
