@@ -164,6 +164,7 @@ public class TicketService
             .Include(t => t.Attendee)
             .Include(t => t.Event)
             .Include(t => t.Payment)
+                .ThenInclude(p => p.Buyer) // Добавить включение Buyer
             .AsQueryable();
 
         if (request.Filter.TicketIds.Count > 0)

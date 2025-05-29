@@ -79,6 +79,11 @@ public class ApplicationDbContext : DbContext
             .WithOne(t => t.Payment)
             .HasForeignKey(t => t.PaymentId);
 
+        modelBuilder.Entity<Payment>()
+            .HasOne(p => p.Buyer)
+            .WithMany()
+            .HasForeignKey(p => p.BuyerId);
+
         // --- Генерация данных ---
         var events = new List<Event>();
         var users = new List<User>();

@@ -94,11 +94,11 @@ public class EventService
         }
 
         if(request.Filter.DateTo != null)
-            query = query.Where(e => e.StartTime >= request.Filter.DateTo);
+            query = query.Where(e => e.StartTime <= request.Filter.DateTo);
 
 
         if (request.Filter.DateFrom != null)
-            query = query.Where(e => e.StartTime <= request.Filter.DateFrom);
+            query = query.Where(e => e.StartTime >= request.Filter.DateFrom);
 
         query = SortingHelper.ApplySorting(query, request.Sort);
 

@@ -20,7 +20,7 @@ public class PaymentUpdateRequest : IValidatableObject
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         // Проверка, что при установке статуса "Оплачено" указана дата оплаты
-        if (Status == PaymentStatus.Succeeded && !PaidAt.HasValue)
+        if (Status == PaymentStatus.Successed && !PaidAt.HasValue)
         {
             yield return new ValidationResult(
                 "When status is set to Paid, PaidAt date must be provided.",
