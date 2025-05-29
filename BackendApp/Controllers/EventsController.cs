@@ -36,7 +36,7 @@ namespace BackendApp.Controllers
         }
         [HttpPost]
         [ValidateModel]
-        public async Task<IActionResult> CreateEvent([FromBody] EventAddRequest request)
+        public async Task<IActionResult> CreateEvent([FromForm] EventAddRequest request)
         {
             var result = await _eventService.CreateEventAsync(request);
             if (!result.IsSuccess)

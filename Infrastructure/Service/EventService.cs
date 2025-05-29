@@ -142,9 +142,15 @@ public class EventService
 
         var ticketResponse = await _ticketService.CreateTicketsAsync(ticketAddRequests);
 
-        if (request.Images != null && request.Images.Count > 0)
+        if (request.Image.Count > 0)
         {
-            var imageResponse = await AddEventImagesAsync(newEvent.Id, request.Images);
+            var imageAdd = request.Image.Zip(request.LocalOrderRank, (image, rank) => new ImageAddRequest()
+            {
+                Image = image,
+                LocalOrderRank = rank
+            }
+            ).ToList();
+            var imageResponse = await AddEventImagesAsync(newEvent.Id, imageAdd);
             if (!imageResponse.IsSuccess)
                 return ServiceResult<EventResponse>.Failure(imageResponse.Error.ErrorMessage, imageResponse.Error.StatusCode);
             eventResponse.Images = imageResponse.Data.Items;

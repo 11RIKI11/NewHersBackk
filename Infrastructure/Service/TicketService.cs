@@ -104,15 +104,9 @@ public class TicketService
 
     public async Task<ServiceResult<SearchResultResponse<TicketResponse>>> CreateTicketsAsync(List<TicketAddRequest> requests)
     {
-        var tickets = new List<Ticket>();
-        foreach (var request in requests)
-        {
-            tickets.Add(new Ticket
-            {
-                EventId = request.EventId,
-                QRCode = string.Empty,//автомат генерация qrCode todo
-            });
-        }
+        var tickets = requests
+            .Select(r => new Ticket() { EventId = r.EventId, QRCode = string.Empty })
+            .ToList();
 
         await _context.Tickets.AddRangeAsync(tickets);
         await _context.SaveChangesAsync();

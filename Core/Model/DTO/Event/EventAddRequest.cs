@@ -3,6 +3,7 @@ using Core.Model.DTO.Ticket;
 using Core.ValidateAttribute;
 using System.ComponentModel.DataAnnotations;
 using Core.ValidateAttribute.Date;
+using Microsoft.AspNetCore.Http;
 
 namespace Core.Model.DTO.Event;
 
@@ -33,6 +34,11 @@ public class EventAddRequest
     public int TicketCount { get; set; }
 
     public string Tag { get; set; } = string.Empty; // e.g., "excursion", "event"
+    [Range(0, 100000)]
+    public decimal Price { get; set; }
 
-    public List<ImageAddRequest> Images { get; set; } = new List<ImageAddRequest>();
+
+    public List<IFormFile> Image { get; set; } = new List<IFormFile>();
+
+    public List<short> LocalOrderRank { get; set; } = new List<short>();
 }
