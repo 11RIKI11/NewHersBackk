@@ -45,7 +45,7 @@ namespace BackendApp.Controllers
         }
         [HttpPut("{id:guid}")]
         [ValidateModel]
-        public async Task<IActionResult> UpdateEvent(Guid id, [FromBody] EventUpdateRequest request)
+        public async Task<IActionResult> UpdateEvent(Guid id, [FromForm] EventUpdateRequest request)
         {
             var result = await _eventService.UpdateEventAsync(id, request);
             if (!result.IsSuccess)

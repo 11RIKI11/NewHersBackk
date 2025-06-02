@@ -7,7 +7,7 @@ namespace Core.Model.DTO.Image;
 [EntityPairValidation("EntityId", "EntityTarget", "ImageType")]
 public class ImageUpdateRequest
 {
-    [Required(ErrorMessage = "Image is required.")]
+    [Required(ErrorMessage = "Images is required.")]
     [FileExtensions(Extensions = "jpg,jpeg,png,gif,bmp", ErrorMessage = "Only image files (jpg, jpeg, png, gif, bmp) are allowed.")]
     public IFormFile Image { get; set; }
 

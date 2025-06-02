@@ -129,31 +129,35 @@ public class EventService
 
         var eventResponse = _mapper.Map<EventResponse>(newEvent);
 
-        var ticketAddRequests = new List<TicketAddRequest>();
+        // Создаем билеты
+        var ticketAddRequests = Enumerable.Range(0, request.TicketCount)
+            .Select(_ => new TicketAddRequest { EventId = newEvent.Id })
+            .ToList();
 
-        for (int i = 0; i < request.TicketCount; i++)
+        await _ticketService.CreateTicketsAsync(ticketAddRequests);
+
+        // Обрабатываем изображения, если они есть
+        if (request.Images.Any())
         {
-            ticketAddRequests.Add(
-                new TicketAddRequest
+            // Преобразуем EventImageAddRequest в ImageAddRequest
+            var imageAddRequests = request.Images
+                .Where(img => img.Image != null)
+                .Select(img => new ImageAddRequest
                 {
-                    EventId = newEvent.Id
-                });
-        }
+                    Image = img.Image,
+                    LocalOrderRank = img.LocalOrderRank,
+                    EntityTarget = "event",
+                    EntityId = newEvent.Id.ToString()
+                }).ToList();
 
-        var ticketResponse = await _ticketService.CreateTicketsAsync(ticketAddRequests);
-
-        if (request.Image.Count > 0)
-        {
-            var imageAdd = request.Image.Zip(request.LocalOrderRank, (image, rank) => new ImageAddRequest()
+            if (imageAddRequests.Any())
             {
-                Image = image,
-                LocalOrderRank = rank
+                var imageResponse = await _imageService.AddUploadedImagesAsync(imageAddRequests);
+                if (!imageResponse.IsSuccess)
+                    return ServiceResult<EventResponse>.Failure(imageResponse.Error.ErrorMessage, imageResponse.Error.StatusCode);
+
+                eventResponse.Images = imageResponse.Data.Items;
             }
-            ).ToList();
-            var imageResponse = await AddEventImagesAsync(newEvent.Id, imageAdd);
-            if (!imageResponse.IsSuccess)
-                return ServiceResult<EventResponse>.Failure(imageResponse.Error.ErrorMessage, imageResponse.Error.StatusCode);
-            eventResponse.Images = imageResponse.Data.Items;
         }
 
         return ServiceResult<EventResponse>.Success(eventResponse);
@@ -163,83 +167,92 @@ public class EventService
     public async Task<ServiceResult<bool>> UpdateEventAsync(Guid id, EventUpdateRequest request)
     {
         var eventEntity = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
-
         if (eventEntity == null)
             return ServiceResult<bool>.Failure("Событие с таким Id не найдено", 404);
-        if (request.Title != null)
-            eventEntity.Title = request.Title;
-        if (request.Description != null)
-            eventEntity.Description = request.Description;
-        if (request.Location != null)
-            eventEntity.Location = request.Location;
+
+        // Обновляем основные поля
+        eventEntity.Title = request.Title;
+        eventEntity.Description = request.Description;
+        eventEntity.Location = request.Location;
         eventEntity.StartTime = request.StartDate;
         eventEntity.EndTime = request.EndDate;
         eventEntity.Price = request.Price;
         eventEntity.IsActive = request.IsActive;
         eventEntity.Tag = request.Tag;
-        //eventEntity.TicketsCount = request.TicketCount;
 
+        // Обновляем билеты
         if (eventEntity.TicketsCount > request.TicketCount)
         {
             var ticketsToRemove = await _context.Tickets
-                .Where(t => t.EventId == eventEntity.Id && ((t.Payment == null ? true : t.Payment.Status.ToString().ToLower() == TicketStatus.Available.ToString().ToLower())))
-                .Take(request.TicketCount)
+                .Where(t => t.EventId == eventEntity.Id && 
+                    (t.Payment == null || t.Payment.Status.ToString().ToLower() == TicketStatus.Available.ToString().ToLower()))
+                .Take(eventEntity.TicketsCount - request.TicketCount)
                 .ToListAsync();
-            if (ticketsToRemove.Count > 0)
+
+            if (ticketsToRemove.Any())
             {
                 _context.Tickets.RemoveRange(ticketsToRemove);
             }
         }
         else if (eventEntity.TicketsCount < request.TicketCount)
         {
-            var ticketAddRequests = new List<TicketAddRequest>();
-            for (int i = 0; i < request.TicketCount - eventEntity.TicketsCount; i++)
-            {
-                ticketAddRequests.Add(new TicketAddRequest { EventId = eventEntity.Id });
-            }
+            var ticketAddRequests = Enumerable.Range(0, request.TicketCount - eventEntity.TicketsCount)
+                .Select(_ => new TicketAddRequest { EventId = eventEntity.Id })
+                .ToList();
+
             await _ticketService.CreateTicketsAsync(ticketAddRequests);
         }
         eventEntity.TicketsCount = request.TicketCount;
 
-        // Обновить изображения события
-        if (request.Images.Count > 0)
+        // Обновляем изображения
+        if (request.Images.Any())
         {
-            await UpdateEventImagesAsync(request.Images);
+            var existingImageIds = await _context.Images
+                .Where(i => i.EntityId == id.ToString())
+                .Select(i => i.Id)
+                .ToListAsync();
+
+            foreach (var imageRequest in request.Images)
+            {
+                if (imageRequest.Id != Guid.Empty && existingImageIds.Contains(imageRequest.Id))
+                {
+                    // Обновляем существующее изображение если есть новый файл
+                    if (imageRequest.Image != null)
+                    {
+                        await _imageService.UpdateImageAsync(imageRequest.Id, new ImageUpdateRequest 
+                        { 
+                            Image = imageRequest.Image,
+                            LocalOrderRank = imageRequest.LocalOrderRank,
+                            EntityTarget = "event",
+                            EntityId = id.ToString()
+                        });
+                    }
+                    existingImageIds.Remove(imageRequest.Id);
+                }
+                else if (imageRequest.Image != null)
+                {
+                    // Добавляем новое изображение
+                    await _imageService.AddUploadedImageAsync(new ImageAddRequest
+                    {
+                        Image = imageRequest.Image,
+                        LocalOrderRank = imageRequest.LocalOrderRank,
+                        EntityTarget = "event",
+                        EntityId = id.ToString()
+                    });
+                }
+            }
+
+            // Удаляем изображения, которых нет в запросе
+            if (existingImageIds.Any())
+            {
+                await _imageService.RemoveImages(existingImageIds);
+            }
         }
 
         _context.Events.Update(eventEntity);
         await _context.SaveChangesAsync();
 
-        return ServiceResult<bool>.Success();
-    }
-
-    public async Task<ServiceResult<bool>> UpdateEventImagesAsync(List<EventImageUpdateRequest> requests)
-    {
-        foreach (var request in requests)
-        {
-            var result = await _imageService.UpdateImageAsync(request.Id, request.Image);
-            if(result.IsSuccess)
-            {
-                requests.Remove(request);
-            }
-        }
-        
-        if (requests.Count > 0)
-        {
-            var images = new List<ImageAddRequest>();
-            foreach (var request in requests)
-            {
-                var image = new ImageAddRequest
-                {
-                    EntityTarget = "event",
-                    EntityId = request.Image.EntityId,
-                    Image = request.Image.Image
-                };
-                images.Add(image);
-            }
-            var result = await _imageService.AddUploadedImagesAsync(images);
-        }
-        return ServiceResult<bool>.Success();
+        return ServiceResult<bool>.Success(true);
     }
 
     // Удалить событие

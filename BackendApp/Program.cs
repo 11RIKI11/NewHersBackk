@@ -1,3 +1,5 @@
+using BackendApp.Swagger;
+using Core.Model.Binders;
 using Infrastructure;
 using Infrastructure.Service;
 using Infrastructure.Utils;
@@ -12,7 +14,11 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.ModelBinderProviders.Insert(0, new EventUpdateRequestBinderProvider());
+    options.ModelBinderProviders.Insert(0, new EventAddRequestBinderProvider());
+});
 
 #region ApiVersionSettings
 
@@ -58,6 +64,7 @@ builder.Services.AddSwaggerGen(options =>
             new string[] {}
         }
     });
+    options.SchemaFilter<FormDataSchemaFilter>();
 });
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -121,6 +128,8 @@ builder.Services.AddScoped<ImageService>();
 builder.Services.AddScoped<UserEventCalendarService>();
 builder.Services.AddScoped<AttendeeService>();
 builder.Services.AddScoped<PaymentService>();
+builder.Services.AddScoped<EventAddRequestBinder>();
+builder.Services.AddScoped<EventUpdateRequestBinder>();
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();

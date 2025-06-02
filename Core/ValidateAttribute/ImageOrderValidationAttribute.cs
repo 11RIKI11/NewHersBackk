@@ -9,7 +9,7 @@ namespace Core.ValidateAttribute
         private readonly string _imagesPropertyName;
 
         public ImageOrderValidationAttribute(string imagesPropertyName)
-            : base("Image validation failed")
+            : base("Images validation failed")
         {
             _imagesPropertyName = imagesPropertyName;
         }
@@ -22,12 +22,12 @@ namespace Core.ValidateAttribute
             {
                 var images = imagesProperty.GetValue(validationContext.ObjectInstance) as System.Collections.IEnumerable;
 
-                if (images == null)
+                /*if (images == null)
                 {
                     return new ValidationResult(
                         "At least one image is required.",
                         new[] { _imagesPropertyName });
-                }
+                }*/
 
                 // Проверяем есть ли элементы в коллекции
                 bool hasElements = false;
@@ -37,12 +37,12 @@ namespace Core.ValidateAttribute
                     break;
                 }
 
-                if (!hasElements)
+                /*if (!hasElements)
                 {
                     return new ValidationResult(
                         "At least one image is required.",
                         new[] { _imagesPropertyName });
-                }
+                }*/
 
                 // Получаем доступ к свойству LocalOrderRank для каждого изображения
                 var localOrderRanks = new List<short>();
@@ -63,7 +63,7 @@ namespace Core.ValidateAttribute
                     if (localOrderRanks[i] != i)
                     {
                         return new ValidationResult(
-                            "Image LocalOrderRank must be sequential starting from 0 without gaps.",
+                            "Images LocalOrderRank must be sequential starting from 0 without gaps.",
                             new[] { _imagesPropertyName });
                     }
                 }

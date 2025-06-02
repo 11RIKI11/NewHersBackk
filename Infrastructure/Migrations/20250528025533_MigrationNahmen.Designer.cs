@@ -513,7 +513,7 @@ namespace Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Core.Model.Entities.Image", b =>
+            modelBuilder.Entity("Core.Model.Entities.Images", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()

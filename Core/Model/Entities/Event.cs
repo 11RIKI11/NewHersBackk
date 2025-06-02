@@ -41,5 +41,5 @@ public class Event
 
     public ICollection<Ticket> Tickets { get; set; }
 
-    //public List<Image> Images { get; set; }
+    //public List<Images> Images { get; set; }
 }

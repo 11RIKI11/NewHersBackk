@@ -102,7 +102,7 @@ namespace BackendApp.Mappers
 
             CreateMap<EventUpdateRequest, Event>();
 
-            // Маппинг для Image
+            // Маппинг для Images
             CreateMap<ImageAddRequest, Image>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(_ => Guid.NewGuid()))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));

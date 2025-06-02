@@ -513,7 +513,7 @@ namespace Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Core.Model.Entities.Image", b =>
+            modelBuilder.Entity("Core.Model.Entities.Images", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1465,7 +1465,7 @@ namespace Infrastructure.Migrations
                     b.ToTable("UserEventCalendars");
                 });
 
-            modelBuilder.Entity("Core.Model.Entities.Image", b =>
+            modelBuilder.Entity("Core.Model.Entities.Images", b =>
                 {
                     b.HasOne("Core.Model.Entities.Event", null)
                         .WithMany("Images")

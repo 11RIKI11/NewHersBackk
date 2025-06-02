@@ -1,12 +1,15 @@
-﻿using Core.Model.DTO.Image;
-using Core.Model.DTO.Ticket;
+﻿using Core.Model.Binders;
 using Core.ValidateAttribute;
-using System.ComponentModel.DataAnnotations;
 using Core.ValidateAttribute.Date;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Swashbuckle.AspNetCore.Annotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Core.Model.DTO.Event;
 
+[ModelBinder(BinderType = typeof(EventAddRequestBinder))]
 [DateValidation("StartDate", "EndDate", AllowFutureDate = true, RequireFuture = true, RequireMinHourFromNow = true)]
 [ImageOrderValidation("Images")]
 public class EventAddRequest
@@ -36,9 +39,14 @@ public class EventAddRequest
     public string Tag { get; set; } = string.Empty; // e.g., "excursion", "event"
     [Range(0, 100000)]
     public decimal Price { get; set; }
+    [JsonIgnore] // Игнорируем при сериализации
+    public List<EventImageAddRequest> Images { get; set; } = new();
 
+    // Добавляем поля специально для Swagger
+    [SwaggerRequestBody(Required = false, Description = "Массив файлов изображений")]
+    public List<IFormFile> ImageFiles { get; set; } = new List<IFormFile>();
 
-    public List<IFormFile> Image { get; set; } = new List<IFormFile>();
+    [SwaggerParameter(Description = "Массив порядковых номеров для изображений")]
+    public List<short> LocalOrderRanks { get; set; } = new List<short>();
 
-    public List<short> LocalOrderRank { get; set; } = new List<short>();
 }
