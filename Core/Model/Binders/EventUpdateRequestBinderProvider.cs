@@ -12,6 +12,6 @@ public class EventUpdateRequestBinderProvider : IModelBinderProvider
         if (context.Metadata.ModelType == typeof(EventUpdateRequest))
             return new EventUpdateRequestBinder();
 
-        throw new InvalidOperationException($"No binder found for model type {context.Metadata.ModelType.FullName}");
+        return null;
     }
 }

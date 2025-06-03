@@ -14,11 +14,6 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
-builder.Services.AddControllers(options =>
-{
-    options.ModelBinderProviders.Insert(0, new EventUpdateRequestBinderProvider());
-    options.ModelBinderProviders.Insert(0, new EventAddRequestBinderProvider());
-});
 
 #region ApiVersionSettings
 
@@ -107,6 +102,8 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
         };
     });
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddCors(options =>
 {

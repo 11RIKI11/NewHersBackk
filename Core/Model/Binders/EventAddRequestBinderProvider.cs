@@ -10,9 +10,10 @@ public class EventAddRequestBinderProvider : IModelBinderProvider
         if (context == null)
             throw new ArgumentNullException(nameof(context));
 
+        // Возвращаем биндер ТОЛЬКО для EventAddRequest
         if (context.Metadata.ModelType == typeof(EventAddRequest))
             return new EventAddRequestBinder();
 
-       throw new InvalidOperationException($"No binder found for model type {context.Metadata.ModelType.Name}.");
+        return null; // Для всех остальных типов возвращаем null
     }
 }
