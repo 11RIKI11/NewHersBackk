@@ -25,7 +25,7 @@ namespace BackendApp.Controllers
             return OkResponse(result.Data);
         }
 
-        [HttpPost("search/me")]
+        [HttpPost("me")]
         [ValidateToken]
         public async Task<IActionResult> GetTicketsBySelf([FromBody] TicketSearchRequest request)
         {
