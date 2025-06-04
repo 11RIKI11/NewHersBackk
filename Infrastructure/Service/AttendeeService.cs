@@ -238,6 +238,19 @@ public class AttendeeService
         return ServiceResult<bool>.Success(true);
     }
 
+    public async Task<ServiceResult<bool>> DropUserAttendeeLinkAsync(Guid userId, Guid attendeeId)
+    {
+        var userAttendee = await _context.UserAttendees
+            .FirstOrDefaultAsync(ua => ua.UserId == userId && ua.AttendeeId == attendeeId);
+        if(userAttendee == null)
+        {
+            return ServiceResult<bool>.Failure("Связь посетителей и пользователей не найдена");
+        }
+        _context.Remove(userAttendee);
+        await _context.SaveChangesAsync();
+        return ServiceResult<bool>.Success();
+    }
+
     public async Task<ServiceResult<SearchResultResponse<AttendeeResponse>>> GetAttendeesByUserByEventAsync(Guid userId, Guid eventId, AttendeeSearchRequest request)
     {
         var ticketAttendees = await _context.Tickets

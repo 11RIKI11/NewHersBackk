@@ -54,6 +54,18 @@ namespace BackendApp.Controllers
             return NoContentResponse();
         }
 
+        [HttpDelete("user-attendee-link/{attendeeId:guid}/by-user/{userId:guid}")]
+        [ValidateModel]
+        [ValidateToken]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> DropUserAttendeeLink (Guid attendeeId, Guid userId)
+        {
+            var result = await _attendeeService.DropUserAttendeeLinkAsync(userId, attendeeId);
+            if (!result.IsSuccess)
+                return BadRequestResponse();
+            return OkResponse(result.Data);
+        }
+
         [HttpPost("{userId:guid}")]
         [ValidateModel]
         [ValidateToken]
