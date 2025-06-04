@@ -123,29 +123,49 @@ public class AttendeeService
         return ServiceResult<bool>.Success();
     }
 
-    public async Task<ServiceResult<AttendeeResponse>> CreateAttendeeAsync(Guid userId, AttendeeAddRequest request)
+    public async Task<ServiceResult<AttendeeResponse>> CreateAttendeeWithUserAsync(Guid userId, AttendeeAddRequest request)
     {
         // Проверь, что посетителя с такими паспортными данными нет
+        var attendeeResponse = (await CreateAttendeeAsync(request)).Data;
+        if(attendeeResponse == null)
+        {
+            return ServiceResult<AttendeeResponse>.Failure("Ошибка при создании пользователя", 500);
+        }
         var userAttendees = await _context.UserAttendees
             .Include(ua => ua.User)
             .Include(ua => ua.Attendee)
-            .Where(ua => ua.UserId == userId && ua.Attendee.DocumentNumber == request.DocumentNumber)
+            .Where(ua => ua.UserId == userId && ua.AttendeeId == attendeeResponse.Id)
             .FirstOrDefaultAsync();
         AttendeeResponse mappingAttendee;
         if (userAttendees != null)
         {
-            mappingAttendee = _mapper.Map<AttendeeResponse>(userAttendees.Attendee);
+            return ServiceResult<AttendeeResponse>.Success(attendeeResponse);
+        }
+
+        // Вынесено в отдельный метод
+        var linkResult = await CreateUserAttendeeLinkAsync(userId, attendeeResponse.Id);
+        if (!linkResult.IsSuccess)
+            return ServiceResult<AttendeeResponse>.Failure("Не удалось создать связь пользователь-посетитель");
+
+        return ServiceResult<AttendeeResponse>.Success(attendeeResponse);
+    }
+
+    public async Task<ServiceResult<AttendeeResponse>> CreateAttendeeAsync(AttendeeAddRequest request)
+    {
+        // Проверь, что посетителя с такими паспортными данными нет
+        var attendeeEntity = await _context.Attendees
+            .FirstOrDefaultAsync(a => a.DocumentNumber == request.DocumentNumber && a.DocumentType.ToLower() == request.DocumentType.ToString().ToLower());
+        AttendeeResponse mappingAttendee;
+        if (attendeeEntity != null)
+        {
+            mappingAttendee = _mapper.Map<AttendeeResponse>(attendeeEntity);
             return ServiceResult<AttendeeResponse>.Success(mappingAttendee);
         }
+
         var attendee = _mapper.Map<Attendee>(request);
         attendee.CreatedAt = DateTime.UtcNow;
         await _context.Attendees.AddAsync(attendee);
         await _context.SaveChangesAsync();
-
-        // Вынесено в отдельный метод
-        var linkResult = await CreateUserAttendeeLinkAsync(userId, attendee.Id);
-        if (!linkResult.IsSuccess)
-            return ServiceResult<AttendeeResponse>.Failure("Не удалось создать связь пользователь-посетитель");
 
         mappingAttendee = _mapper.Map<AttendeeResponse>(attendee);
         return ServiceResult<AttendeeResponse>.Success(mappingAttendee);

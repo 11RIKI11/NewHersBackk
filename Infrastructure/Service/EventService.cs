@@ -193,6 +193,7 @@ public class EventService
             {
                 _context.Tickets.RemoveRange(ticketsToRemove);
             }
+            eventEntity.TicketsCount = eventEntity.TicketsCount - ticketsToRemove.Count;
         }
         else if (eventEntity.TicketsCount < request.TicketCount)
         {
@@ -201,8 +202,8 @@ public class EventService
                 .ToList();
 
             await _ticketService.CreateTicketsAsync(ticketAddRequests);
+            eventEntity.TicketsCount = request.TicketCount;
         }
-        eventEntity.TicketsCount = request.TicketCount;
 
         // Обновляем изображения
         if (request.Images.Any())

@@ -58,9 +58,21 @@ namespace BackendApp.Controllers
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "admin")]
-        public async Task<IActionResult> CreateAttendee(Guid userId, [FromBody] AttendeeAddRequest request) 
+        public async Task<IActionResult> CreateAttendeeByUser(Guid userId, [FromBody] AttendeeAddRequest request) 
         {
-            var result = await _attendeeService.CreateAttendeeAsync(userId, request);
+            var result = await _attendeeService.CreateAttendeeWithUserAsync(userId, request);
+            if (!result.IsSuccess) 
+                return BadRequestResponse(result.Error.ErrorMessage);
+            return OkResponse(result.Data);
+        }
+
+        [HttpPost]
+        [ValidateModel]
+        [ValidateToken]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> CreateAttendee([FromBody] AttendeeAddRequest request) 
+        {
+            var result = await _attendeeService.CreateAttendeeAsync(request);
             if (!result.IsSuccess) 
                 return BadRequestResponse(result.Error.ErrorMessage);
             return OkResponse(result.Data);
@@ -72,7 +84,7 @@ namespace BackendApp.Controllers
         [Authorize(Roles = "user")]
         public async Task<IActionResult> CreateAttendeeSelf([FromBody] AttendeeAddRequest request) 
         {
-            var result = await _attendeeService.CreateAttendeeAsync(UserId.Value, request);
+            var result = await _attendeeService.CreateAttendeeWithUserAsync(UserId.Value, request);
             if (!result.IsSuccess)
                 return BadRequestResponse(result.Error.ErrorMessage);
             return OkResponse(result.Data);
