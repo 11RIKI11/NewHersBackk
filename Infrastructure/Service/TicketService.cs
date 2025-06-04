@@ -127,20 +127,78 @@ public class TicketService
 
     public async Task<ServiceResult<bool>> UpdateTicketAsync(Guid id, TicketUpdateRequest request)
     {
-        var ticketEntity = await _context.Tickets.FindAsync(id);
+        var ticketEntity = await _context.Tickets
+            .Include(t => t.Payment)
+            .Include(t => t.Event)
+            .Include(t => t.Attendee)
+            .FirstOrDefaultAsync(t => t.Id == id);
         if (ticketEntity == null)
             return ServiceResult<bool>.Failure("Билет с таким Id не найден", 404);
 
-        //Без обновления кьюаркода?
+        var eventEntity = ticketEntity.Event;
+        if (eventEntity == null)
+            return ServiceResult<bool>.Failure("Событие не найдено", 404);
+
+        // Проверка времени события
+        if (eventEntity.StartTime <= DateTime.UtcNow)
+            return ServiceResult<bool>.Failure("Невозможно обновить билет - событие уже началось", 409);
+            
+        if (eventEntity.EndTime <= DateTime.UtcNow) 
+            return ServiceResult<bool>.Failure("Невозможно обновить билет - событие уже завершилось", 409);
+
+        var paymentEntity = ticketEntity.Payment;
+
+        if (paymentEntity == null)
+        {
+            paymentEntity = (await _context.Tickets
+                .Include(t => t.Payment)
+                .Include(t => t.Event)
+                .Include(t => t.Attendee)
+                .FirstOrDefaultAsync(t => t.EventId == ticketEntity.EventId &&
+            t.Payment != null && t.Payment.Status.ToLower() == PaymentStatus.WaitingForPayment.ToString().ToLower() &&
+            t.Payment.BuyerId == request.UserId))?.Payment;
+            if (paymentEntity != null)
+            {
+                paymentEntity.Amount += eventEntity.Price;
+                paymentEntity.Tickets.Add(ticketEntity);
+            }
+        }
+
+        if (paymentEntity == null && request.UserId != null)
+        {
+            var paymentAddRequest = new PaymentAddRequest
+            {
+                BuyerId = request.UserId,
+                Amount = eventEntity.Price,
+                TicketIds = new List<Guid> { ticketEntity.Id }
+            };
+            var paymentResponse = await _paymentService.CreatePaymentAsync(paymentAddRequest);
+            if (!paymentResponse.IsSuccess)
+                return ServiceResult<bool>.Failure(paymentResponse.Error.ErrorMessage, paymentResponse.Error.StatusCode);
+        }
+
+        if (request.UserId == null)
+            ticketEntity.Payment = null;
 
         if (request.AttendeeId == null)
-            ticketEntity.AttendeeId = request.AttendeeId;
+            ticketEntity.AttendeeId = null;
         else
+        {
             ticketEntity.AttendeeId = request.AttendeeId.Value;
-        if (request.PaymentId == null)
-            ticketEntity.PaymentId = request.PaymentId;
-        else
-            ticketEntity.PaymentId = request.PaymentId.Value;
+            var userAttendeeEntity = await _context.UserAttendees.FirstOrDefaultAsync(ua => ua.AttendeeId == request.AttendeeId.Value
+            && ua.UserId == request.UserId);
+            if (userAttendeeEntity == null && request.UserId != null)
+            {
+                var userAttendee = new UserAttendee
+                {
+                    AttendeeId = request.AttendeeId.Value,
+                    UserId = request.UserId
+                };
+                await _context.UserAttendees.AddAsync(userAttendee);
+            }
+        }
+            
+
         ticketEntity.QRCode = request.QrCode;
 
         _context.Tickets.Update(ticketEntity);
@@ -229,7 +287,7 @@ public class TicketService
                 };
 
                 orderedQuery = isFirstSort
-                    ? isDescending 
+                    ? isDescending
                         ? query.OrderByDescending(orderByExpression)
                         : query.OrderBy(orderByExpression)
                     : isDescending
@@ -290,6 +348,9 @@ public class TicketService
         }
 
         var reserveTicket = await _context.Tickets
+            .Include(t => t.Payment)
+            .Include(t => t.Event)
+            .Include(t => t.Attendee)
             .FirstOrDefaultAsync(t => t.EventId == request.EventId && t.Payment != null
             && t.Payment.Status.ToLower() == PaymentStatus.WaitingForPayment.ToString().ToLower()
             && t.Payment.BuyerId == request.UserId);
@@ -335,7 +396,7 @@ public class TicketService
         // Находим платеж пользователя
         var payment = await _context.Payments
             .Include(p => p.Tickets)
-            .FirstOrDefaultAsync(p => p.BuyerId == userId 
+            .FirstOrDefaultAsync(p => p.BuyerId == userId
                 && p.Tickets.Any(t => t.EventId == eventId)
                 && p.Status.ToLower() == PaymentStatus.WaitingForPayment.ToString().ToLower());
 
@@ -351,7 +412,7 @@ public class TicketService
 
         // Удаляем платеж
         _context.Payments.Remove(payment);
-        
+
         await _context.SaveChangesAsync();
         return ServiceResult<bool>.Success();
     }

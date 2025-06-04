@@ -26,6 +26,7 @@ public class PaymentService
     public async Task<ServiceResult<PaymentResponse>> CreatePaymentAsync(PaymentAddRequest request)
     {
         var payment = _mapper.Map<Payment>(request);
+        payment.QrUrl = "SomeQr";
         
         var tickets = await _context.Tickets
             .Include(t => t.Payment)
