@@ -67,6 +67,18 @@ public class UsersController : CustomControllerBase
         return NoContentResponse();
     }
 
+    [HttpPut("me")]
+    [ValidateModel]
+    [ValidateToken]
+    public async Task<IActionResult> UpdateUserSelf([FromBody] UserUpdateRequest userDto)
+    {
+        var result = await _userService.UpdateUserAsync(UserId.Value, userDto);
+
+        if (!result.IsSuccess)
+            return BadRequestResponse(result.Error.ErrorMessage);
+        return NoContentResponse();
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteUser(Guid id)
     {

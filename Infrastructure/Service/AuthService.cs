@@ -31,6 +31,7 @@ public class AuthService
             return ServiceResult<(string token, string role, Guid id)>.Failure("Email уже зарегистрирован", 409);
 
         var newUser = _mapper.Map<User>(userRequest);
+        newUser.BirthDate = userRequest.BirthDate.ToUniversalTime();
         newUser.PasswordHash = _passwordHasher.HashPassword(userRequest.Password);
 
         await _context.AddAsync(newUser);

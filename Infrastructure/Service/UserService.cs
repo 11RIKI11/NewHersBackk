@@ -56,7 +56,7 @@ public class UserService
         if (!string.IsNullOrEmpty(request.Filter.Email))
             query = query.Where(a => EF.Functions.ILike(a.Email, $"%{request.Filter.Email}%"));
 
-        if(!string.IsNullOrEmpty(request.Filter.Phone))
+        if (!string.IsNullOrEmpty(request.Filter.Phone))
             query = query.Where(a => EF.Functions.ILike(a.Phone, $"%{request.Filter.Phone}%"));
 
         if (request.Filter.Roles.Count > 0)
@@ -67,7 +67,7 @@ public class UserService
 
         if (request.Filter.CreatedAtFrom != null)
             query = query.Where(u => u.CreatedAt >= request.Filter.CreatedAtFrom);
-        if(request.Filter.CreatedAtTo != null)
+        if (request.Filter.CreatedAtTo != null)
             query = query.Where(u => u.CreatedAt <= request.Filter.CreatedAtTo);
 
         if (request.Filter.BirthDateFrom != null)
@@ -102,7 +102,13 @@ public class UserService
 
         if (user == null)
             return ServiceResult<bool>.Failure("Пользователь с таким Id не найден", 404);
+
+        var role = user.Role.ToString().ToLower();
+
         _mapper.Map(request, user);
+
+        if (request.Role == null)
+            user.Role = role;
 
         _context.Users.Update(user);
         await _context.SaveChangesAsync();

@@ -75,12 +75,15 @@ namespace BackendApp.Controllers
             return NoContentResponse();
         }
 
-        [HttpPost("reserve/{Event:guid}")]
+        [HttpPost("reserve/{eventId:guid}")]
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "user")]
-        public async Task<IActionResult> ReserveTicket(Guid eventId, [FromBody] List<AttendeeAddRequest> requests)
+        public async Task<IActionResult> ReserveTicket([FromRoute] Guid eventId, [FromBody] List<AttendeeAddRequest>? requests)
         {
+            if(requests == null)
+                requests = new List<AttendeeAddRequest>();
+
             var request = new ReserveTicketRequest
             {
                 UserId = UserId.Value,
