@@ -251,16 +251,18 @@ public class TicketService
                 .Where(t => request.Filter.PaymentIds.Contains(t.PaymentId.Value));
 
         if (!string.IsNullOrEmpty(request.Filter.BuyerName))
-            query = query.Where(a => a.Payment == null ? true :
+            query = query.Where(a => a.Payment == null ? false :
             EF.Functions.ILike(a.Payment.Buyer.FullName, $"{request.Filter.BuyerName}%") ||
             EF.Functions.ILike(a.Payment.Buyer.FullName, $" %{request.Filter.BuyerName}")
             );
 
         if (!string.IsNullOrEmpty(request.Filter.AttendeeName))
-            query = query.Where(a => a.Attendee == null ? true :
+            query = query.Where(a => a.Attendee == null ? false :
             EF.Functions.ILike(a.Attendee.FullName, $"{request.Filter.AttendeeName}%") ||
             EF.Functions.ILike(a.Attendee.FullName, $" %{request.Filter.AttendeeName}")
             );
+
+        var temp = await query.ToListAsync();
 
         if (request.Sort != null && request.Sort.Any())
         {
