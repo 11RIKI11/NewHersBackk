@@ -1,4 +1,4 @@
-﻿using Core.Model.Binders;
+﻿using Core.Binders;
 using Core.ValidateAttribute;
 using Core.ValidateAttribute.Date;
 using Microsoft.AspNetCore.Http;
@@ -48,14 +48,4 @@ public class EventUpdateRequest
 
     [JsonIgnore] // Игнорируем коллекцию Images при сериализации
     public List<EventImageUpdateRequest> Images { get; set; } = new();
-
-    // Добавляем поля специально для Swagger
-    [SwaggerRequestBody(Required = false, Description = "Массив файлов изображений")]
-    public IFormFileCollection? ImageFiles { get; set; }
-
-    [SwaggerParameter(Description = "Массив ID существующих изображений")]
-    public Guid[]? ImageIds { get; set; }
-
-    [SwaggerParameter(Description = "Массив порядковых номеров для изображений")]
-    public short[]? LocalOrderRanks { get; set; }
 }

@@ -1,10 +1,11 @@
-﻿using Core.Model.Binders;
+﻿
+using Core.Binders;
 using Core.ValidateAttribute;
 using Core.ValidateAttribute.Date;
-using Microsoft.AspNetCore.Http;
+
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using Swashbuckle.AspNetCore.Annotations;
+
 using System.ComponentModel.DataAnnotations;
 
 namespace Core.Model.DTO.Event;
@@ -34,19 +35,13 @@ public class EventAddRequest
 
     [Required(ErrorMessage = "Ticket count is required.")]
     [Range(6, int.MaxValue, ErrorMessage = "Ticket count must be greater than 5.")]
-    public int TicketCount { get; set; }
+    public int TicketsCount { get; set; }
 
     public string Tag { get; set; } = string.Empty; // e.g., "excursion", "event"
     [Range(0, 100000)]
     public decimal Price { get; set; }
+
     [JsonIgnore] // Игнорируем при сериализации
     public List<EventImageAddRequest> Images { get; set; } = new();
-
-    // Добавляем поля специально для Swagger
-    [SwaggerRequestBody(Required = false, Description = "Массив файлов изображений")]
-    public List<IFormFile> ImageFiles { get; set; } = new List<IFormFile>();
-
-    [SwaggerParameter(Description = "Массив порядковых номеров для изображений")]
-    public List<short> LocalOrderRanks { get; set; } = new List<short>();
 
 }

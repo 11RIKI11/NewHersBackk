@@ -17,7 +17,8 @@ namespace BackendApp.Mappers
         public AutoMapper()
         {
             // Маппинг Event -> EventResponse
-            CreateMap<Event, EventResponse>();
+            CreateMap<Event, EventResponse>()
+                .ForMember(dest => dest.Tag, opt => opt.MapFrom(src => src.Tag));
 
             // Маппинг Ticket -> TicketResponse
             CreateMap<Ticket, TicketResponse>()
@@ -100,10 +101,14 @@ namespace BackendApp.Mappers
             // Маппинг для Event
             CreateMap<EventAddRequest, Event>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(_ => Guid.NewGuid()))
-                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow.ToUniversalTime()))
+                .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => src.StartDate.ToUniversalTime()))
+                .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => src.EndDate.ToUniversalTime()))
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(_ => true));
 
-            CreateMap<EventUpdateRequest, Event>();
+            CreateMap<EventUpdateRequest, Event>()
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.StartDate.ToUniversalTime()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.EndDate.ToUniversalTime()));
 
             // Маппинг для Images
             CreateMap<ImageAddRequest, Image>()

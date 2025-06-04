@@ -28,7 +28,9 @@ namespace Core.Extensions
                 EndTime = e.EndTime,
                 Price = e.Price,
                 IsActive = e.IsActive,
-                Images = images.Where(i => i.EntityId == e.Id.ToString())
+                Tag = e.Tag,
+                TicketsCount = e.TicketsCount,
+                Images = images.Where(i => i.EntityId == e.Id.ToString() && i.EntityTarget == "event")
                     .Select(i => new ImageResponse
                     {
                         Id = i.Id,

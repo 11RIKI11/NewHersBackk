@@ -1,7 +1,7 @@
 ﻿using Core.Model.DTO.Event;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace Core.Model.Binders;
+namespace Core.Binders;
 
 public class EventAddRequestBinder : IModelBinder
 {
@@ -10,41 +10,51 @@ public class EventAddRequestBinder : IModelBinder
         var eventRequest = new EventAddRequest();
         var form = bindingContext.HttpContext.Request.Form;
 
-        eventRequest.Title = form["Title"].ToString();
-        eventRequest.Description = form["Description"].ToString();
-        eventRequest.Location = form["Location"].ToString();
+        eventRequest.Title = form["title"];
+        eventRequest.Description = form["description"];
+        eventRequest.Location = form["location"];
 
-        if (DateTime.TryParse(form["StartDate"], out DateTime startDate))
+        if (DateTime.TryParse(form["startDate"], out DateTime startDate))
             eventRequest.StartDate = startDate;
 
-        if (DateTime.TryParse(form["EndDate"], out DateTime endDate))
+        if (DateTime.TryParse(form["endDate"], out DateTime endDate))
             eventRequest.EndDate = endDate;
 
-        if (int.TryParse(form["TicketCount"], out int ticketCount))
-            eventRequest.TicketCount = ticketCount;
+        if (int.TryParse(form["ticketCount"], out int ticketCount))
+            eventRequest.TicketsCount = ticketCount;
 
-        eventRequest.Tag = form["Tag"].ToString();
-
-        if (decimal.TryParse(form["Price"], out decimal price))
+        if (decimal.TryParse(form["price"], out decimal price))
             eventRequest.Price = price;
 
-        // Bind images and their order ranks
-        var imageFiles = form.Files.Where(f => f.Name.StartsWith("ImageFiles")).ToList();
-        var orderRanks = form["LocalOrderRanks"];
+        eventRequest.Tag = form["tag"];
 
-        for (int i = 0; i < imageFiles.Count; i++)
+        // Обработка изображений в формате images[0].id, images[0].image, images[0].localOrderRank
+        var files = form.Files;
+        int index = 0;
+
+        while (true)
         {
-            var image = imageFiles[i];
-            var orderRankValue = orderRanks[i]?.ToString();
+            var imageKey = $"images[{index}].image";
+            var rankKey = $"images[{index}].localOrderRank";
 
-            if (short.TryParse(orderRankValue, out short rank))
-            {
-                eventRequest.Images.Add(new EventImageAddRequest
-                {
-                    Image = image,
-                    LocalOrderRank = rank
-                });
-            }
+            if (!form.ContainsKey(rankKey) && !files.Any(f => f.Name == imageKey))
+                break;
+
+            var imageRequest = new EventImageAddRequest();
+
+            var file = files.FirstOrDefault(f => f.Name == imageKey);
+            if (file != null)
+                imageRequest.Image = file;
+
+            if (form.ContainsKey(rankKey) && short.TryParse(form[rankKey], out short rank))
+                imageRequest.LocalOrderRank = rank;
+            else
+                imageRequest.LocalOrderRank = -1;
+
+            if ((imageRequest.Image != null) && imageRequest.LocalOrderRank >= 0)
+                eventRequest.Images.Add(imageRequest);
+
+            index++;
         }
 
         bindingContext.Result = ModelBindingResult.Success(eventRequest);

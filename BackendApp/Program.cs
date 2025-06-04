@@ -1,5 +1,5 @@
 using BackendApp.Swagger;
-using Core.Model.Binders;
+using Core.Binders;
 using Infrastructure;
 using Infrastructure.Service;
 using Infrastructure.Utils;

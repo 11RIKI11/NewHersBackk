@@ -1,7 +1,7 @@
 ﻿using Core.Model.DTO.Event;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace Core.Model.Binders;
+namespace Core.Binders;
 
 public class EventUpdateRequestBinder : IModelBinder
 {
@@ -10,57 +10,60 @@ public class EventUpdateRequestBinder : IModelBinder
         var eventRequest = new EventUpdateRequest();
         var form = bindingContext.HttpContext.Request.Form;
 
-        eventRequest.Title = form["Title"].ToString();
-        eventRequest.Description = form["Description"].ToString();
-        eventRequest.Location = form["Location"].ToString();
+        eventRequest.Title = form["title"];
+        eventRequest.Description = form["description"];
+        eventRequest.Location = form["location"];
 
-        if (DateTime.TryParse(form["StartDate"], out DateTime startDate))
+        if (DateTime.TryParse(form["startDate"], out DateTime startDate))
             eventRequest.StartDate = startDate;
 
-        if (DateTime.TryParse(form["EndDate"], out DateTime endDate))
+        if (DateTime.TryParse(form["endDate"], out DateTime endDate))
             eventRequest.EndDate = endDate;
 
-        if (int.TryParse(form["TicketCount"], out int ticketCount))
+        if (int.TryParse(form["ticketCount"], out int ticketCount))
             eventRequest.TicketCount = ticketCount;
 
-        eventRequest.Tag = form["Tag"].ToString();
-
-        if (decimal.TryParse(form["Price"], out decimal price))
+        if (decimal.TryParse(form["price"], out decimal price))
             eventRequest.Price = price;
 
-        if (bool.TryParse(form["IsActive"], out bool isActive))
+        if (bool.TryParse(form["isActive"], out bool isActive))
             eventRequest.IsActive = isActive;
 
-        var imageFiles = form.Files.Where(f => f.Name.StartsWith("ImageFiles")).ToList();
-        var imageIds = form["ImageIds"];
-        var orderRanks = form["LocalOrderRanks"];
+        eventRequest.Tag = form["tag"];
 
-        for (int i = 0; i < Math.Max(imageFiles.Count, imageIds.Count); i++)
+        // Обработка изображений в формате images[0].id, images[0].image, images[0].localOrderRank
+        var files = form.Files;
+        int index = 0;
+
+        while (true)
         {
+            var idKey = $"images[{index}].id";
+            var imageKey = $"images[{index}].image";
+            var rankKey = $"images[{index}].localOrderRank";
+
+            if (!form.ContainsKey(idKey) && !form.ContainsKey(rankKey) && !files.Any(f => f.Name == imageKey))
+                break;
+
             var imageRequest = new EventImageUpdateRequest();
 
-            var id = imageIds[i];
-            if (Guid.TryParse(id, out Guid imageId))
-            {
+            if (form.ContainsKey(idKey) && Guid.TryParse(form[idKey], out Guid imageId))
                 imageRequest.Id = imageId;
-            }
+            else
+                imageRequest.Id = Guid.Empty;
 
-            var image = imageFiles[i];
-            if (image != null)
-            {
-                imageRequest.Image = image;
-            }
+            var file = files.FirstOrDefault(f => f.Name == imageKey);
+            if (file != null)
+                imageRequest.Image = file;
 
-            var orderRank = orderRanks[i];
-            if (short.TryParse(orderRank, out short rank))
-            {
+            if (form.ContainsKey(rankKey) && short.TryParse(form[rankKey], out short rank))
                 imageRequest.LocalOrderRank = rank;
-            }
+            else
+                imageRequest.LocalOrderRank = -1;
 
-            if (imageRequest.Id != Guid.Empty || imageRequest.Image != null)
-            {
+            if ((imageRequest.Image != null || imageRequest.Id != Guid.Empty )&& imageRequest.LocalOrderRank >= 0)
                 eventRequest.Images.Add(imageRequest);
-            }
+
+            index++;
         }
 
         bindingContext.Result = ModelBindingResult.Success(eventRequest);

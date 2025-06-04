@@ -12,8 +12,8 @@ public class EventResponse
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public decimal Price { get; set; }
+    public int TicketsCount { get; set; }
     public bool IsActive { get; set; }
-
     public string Tag { get; set; } = string.Empty; // e.g., "excursion", "event"
     public List<ImageResponse> Images { get; set; } = new List<ImageResponse>();
 }

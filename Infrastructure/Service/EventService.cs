@@ -34,7 +34,7 @@ public class EventService
     {
         var eventResponse = await _context.Events
             .IncludeEventImages(_context.Images)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(i => i.Id == id);
 
         if (eventResponse == null)
             return ServiceResult<EventResponse>.Failure("Событие с таким Id не найдено", 404);
@@ -130,12 +130,12 @@ public class EventService
         var eventResponse = _mapper.Map<EventResponse>(newEvent);
 
         // Создаем билеты
-        var ticketAddRequests = Enumerable.Range(0, request.TicketCount)
+        var ticketAddRequests = Enumerable.Range(0, request.TicketsCount)
             .Select(_ => new TicketAddRequest { EventId = newEvent.Id })
             .ToList();
 
         await _ticketService.CreateTicketsAsync(ticketAddRequests);
-
+        
         // Обрабатываем изображения, если они есть
         if (request.Images.Any())
         {
@@ -152,12 +152,18 @@ public class EventService
 
             if (imageAddRequests.Any())
             {
-                var imageResponse = await _imageService.AddUploadedImagesAsync(imageAddRequests);
-                if (!imageResponse.IsSuccess)
-                    return ServiceResult<EventResponse>.Failure(imageResponse.Error.ErrorMessage, imageResponse.Error.StatusCode);
+                List<ImageResponse> images = new List<ImageResponse>();
+                for (int i = 0; i < imageAddRequests.Count; i++)
+                {
+                    var img = await _imageService.AddUploadedImageAsync(imageAddRequests[i]);
+                    if (!img.IsSuccess)
+                        return ServiceResult<EventResponse>.Failure(img.Error.ErrorMessage, img.Error.StatusCode);
 
-                eventResponse.Images = imageResponse.Data.Items;
+                    images.Add(img.Data);
+                }
+                eventResponse.Images = images;
             }
+
         }
 
         return ServiceResult<EventResponse>.Success(eventResponse);
@@ -174,8 +180,8 @@ public class EventService
         eventEntity.Title = request.Title;
         eventEntity.Description = request.Description;
         eventEntity.Location = request.Location;
-        eventEntity.StartTime = request.StartDate;
-        eventEntity.EndTime = request.EndDate;
+        eventEntity.StartTime = request.StartDate.ToUniversalTime();
+        eventEntity.EndTime = request.EndDate.ToUniversalTime();
         eventEntity.Price = request.Price;
         eventEntity.IsActive = request.IsActive;
         eventEntity.Tag = request.Tag;
@@ -184,8 +190,7 @@ public class EventService
         if (eventEntity.TicketsCount > request.TicketCount)
         {
             var ticketsToRemove = await _context.Tickets
-                .Where(t => t.EventId == eventEntity.Id && 
-                    (t.Payment == null || t.Payment.Status.ToString().ToLower() == TicketStatus.Available.ToString().ToLower()))
+                .Where(t => t.EventId == eventEntity.Id && t.Payment == null )
                 .Take(eventEntity.TicketsCount - request.TicketCount)
                 .ToListAsync();
 
@@ -217,16 +222,12 @@ public class EventService
             {
                 if (imageRequest.Id != Guid.Empty && existingImageIds.Contains(imageRequest.Id))
                 {
-                    // Обновляем существующее изображение если есть новый файл
-                    if (imageRequest.Image != null)
+                    Image? image = await _context.Images.FirstOrDefaultAsync(i => i.Id == imageRequest.Id);
+                    if (image != null)
                     {
-                        await _imageService.UpdateImageAsync(imageRequest.Id, new ImageUpdateRequest 
-                        { 
-                            Image = imageRequest.Image,
-                            LocalOrderRank = imageRequest.LocalOrderRank,
-                            EntityTarget = "event",
-                            EntityId = id.ToString()
-                        });
+                        image.LocalOrderRank = imageRequest.LocalOrderRank;
+                        _context.Images.Update(image);
+                        await _context.SaveChangesAsync();
                     }
                     existingImageIds.Remove(imageRequest.Id);
                 }

@@ -1,5 +1,5 @@
 ﻿using Core.Attribute;
-using Core.Model.Binders;
+
 using Core.Model.DTO.Event;
 using Core.Model.DTO.Image;
 using Infrastructure.Service;
@@ -37,7 +37,7 @@ namespace BackendApp.Controllers
         }
         [HttpPost]
         [ValidateModel]
-        public async Task<IActionResult> CreateEvent([FromForm] [ModelBinder(typeof(EventAddRequestBinder))]EventAddRequest request)
+        public async Task<IActionResult> CreateEvent([FromForm] EventAddRequest request)
         {
             var result = await _eventService.CreateEventAsync(request);
             if (!result.IsSuccess)
@@ -46,7 +46,7 @@ namespace BackendApp.Controllers
         }
         [HttpPut("{id:guid}")]
         [ValidateModel]
-        public async Task<IActionResult> UpdateEvent(Guid id, [FromForm][ModelBinder(typeof(EventUpdateRequestBinder))] EventUpdateRequest request)
+        public async Task<IActionResult> UpdateEvent(Guid id, [FromForm] EventUpdateRequest request)
         {
             var result = await _eventService.UpdateEventAsync(id, request);
             if (!result.IsSuccess)
@@ -59,7 +59,7 @@ namespace BackendApp.Controllers
             var result = await _eventService.DeleteEventAsync(id);
             if (!result.IsSuccess)
                 return NotFoundResponse(result.Error.ErrorMessage);
-            return NoContent();
+            return NoContentResponse();
         }
     }
 }

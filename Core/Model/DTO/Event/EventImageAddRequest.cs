@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Core.Model.DTO.Event;
 public class EventImageAddRequest
 {
+    public Guid Id { get; set; }
     [Required(ErrorMessage = "Images is required.")]
     [FileExtensions(Extensions = "jpg,jpeg,png,gif,bmp", ErrorMessage = "Only image files (jpg, jpeg, png, gif, bmp) are allowed.")]
     public IFormFile Image { get; set; }

@@ -161,7 +161,7 @@ public class ApplicationDbContext : DbContext
                 Id = Guid.NewGuid(),
                 FullName = $"Петров Петр {i}",
                 BirthDate = DateTime.UtcNow.AddYears(-25).AddDays(rnd.Next(3650)),
-                DocumentType = i % 2 == 0 ? "passport" : "foreign_passport",
+                DocumentType = i % 2 == 0 ? "passport" : "foreignPassport",
                 DocumentNumber = i % 2 == 0 ? $"45{i:D02} {rnd.Next(100000, 999999)}" : $"71{rnd.Next(1000000, 9999999)}",
                 CreatedAt = now.AddDays(-i)
             });
@@ -204,7 +204,7 @@ public class ApplicationDbContext : DbContext
                 Id = paymentId,
                 BuyerId = buyer.Id,
                 Amount = amount,
-                Status = "paid",
+                Status = "Successed",
                 QrUrl = $"https://payment.example.com/{paymentId}",
                 CreatedAt = now.AddDays(-5 + i),
                 PaidAt = now.AddDays(-5 + i).AddMinutes(rnd.Next(5, 30))
