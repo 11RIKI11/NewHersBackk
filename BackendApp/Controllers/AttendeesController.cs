@@ -102,7 +102,7 @@ namespace BackendApp.Controllers
             return OkResponse(result.Data);
         }
 
-        [HttpPost("me/search/by-event/{EventId:guid}")]
+        [HttpPost("me/search/by-event/{Event:guid}")]
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "user")]

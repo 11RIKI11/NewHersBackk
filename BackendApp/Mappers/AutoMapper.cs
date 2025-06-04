@@ -21,6 +21,7 @@ namespace BackendApp.Mappers
 
             // Маппинг Ticket -> TicketResponse
             CreateMap<Ticket, TicketResponse>()
+                .ForMember(dest => dest.Event, opt => opt.MapFrom(src => src.Event))
                 .ForMember(dest => dest.Attendee, opt => opt.MapFrom(src => src.Attendee));
 
             //CreateMap<PaymentTicket, TicketResponse>()

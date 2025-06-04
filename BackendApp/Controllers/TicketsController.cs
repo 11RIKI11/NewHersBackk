@@ -75,7 +75,7 @@ namespace BackendApp.Controllers
             return NoContent();
         }
 
-        [HttpPost("reserve/{EventId:guid}")]
+        [HttpPost("reserve/{Event:guid}")]
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "user")]
@@ -111,7 +111,7 @@ namespace BackendApp.Controllers
             return OkResponse(result.Data);
         }
 
-        [HttpGet("available/{EventId:guid}")]
+        [HttpGet("available/{Event:guid}")]
         public async Task<IActionResult> GetAvailableTicketsCount(Guid eventId)
         {
             var result = await _ticketService.GetAvailableTicketsCountAsync(eventId);
@@ -120,7 +120,7 @@ namespace BackendApp.Controllers
             return OkResponse(result.Data);
         }
 
-        [HttpPost("cancel-reserve/{EventId:guid}")]
+        [HttpPost("cancel-reserve/{Event:guid}")]
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "user")]

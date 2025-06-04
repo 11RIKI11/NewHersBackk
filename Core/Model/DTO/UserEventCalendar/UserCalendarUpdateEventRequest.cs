@@ -5,7 +5,7 @@ namespace Core.Model.DTO.UserEventCalendar;
 
 public class UserCalendarUpdateEventRequest : IValidatableObject
 {
-    [Required(ErrorMessage = "EventId is required.")]
+    [Required(ErrorMessage = "Event is required.")]
     public Guid EventId { get; set; }
     
     

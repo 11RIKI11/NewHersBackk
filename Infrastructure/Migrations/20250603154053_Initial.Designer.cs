@@ -688,7 +688,7 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("AttendeeId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("EventId")
+                    b.Property<Guid>("Event")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("PaymentId")
@@ -705,7 +705,7 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("AttendeeId");
 
-                    b.HasIndex("EventId");
+                    b.HasIndex("Event");
 
                     b.HasIndex("PaymentId");
 
@@ -1364,7 +1364,7 @@ namespace Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("EventId")
+                    b.Property<Guid>("Event")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Note")
@@ -1378,7 +1378,7 @@ namespace Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EventId");
+                    b.HasIndex("Event");
 
                     b.HasIndex("UserId");
 
@@ -1404,7 +1404,7 @@ namespace Infrastructure.Migrations
 
                     b.HasOne("Core.Model.Entities.Event", "Event")
                         .WithMany("Tickets")
-                        .HasForeignKey("EventId")
+                        .HasForeignKey("Event")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1446,7 +1446,7 @@ namespace Infrastructure.Migrations
                 {
                     b.HasOne("Core.Model.Entities.Event", "Event")
                         .WithMany()
-                        .HasForeignKey("EventId")
+                        .HasForeignKey("Event")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

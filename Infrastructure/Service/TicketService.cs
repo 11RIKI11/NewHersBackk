@@ -11,6 +11,7 @@ using Core.Results;
 using Infrastructure.Utils;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using System.Numerics;
 
 namespace Infrastructure.Service;
@@ -37,6 +38,7 @@ public class TicketService
             .Include(t => t.Attendee)
             .Include(t => t.Event)
             .Include(t => t.Payment)
+            .ThenInclude(p => p.Buyer)
             .FirstOrDefaultAsync(t => t.Id == id);
         if (ticketEntity == null)
             return ServiceResult<TicketResponse>.Failure("Билет с таким Id не найден", 404);
@@ -51,6 +53,7 @@ public class TicketService
             .Include(t => t.Attendee)
             .Include(t => t.Event)
             .Include(t => t.Payment)
+            .ThenInclude(p => p.Buyer)
             .Where(t => t.Payment == null ? true : t.Payment.BuyerId == userId);
         var totalCount = await ticketEntities.CountAsync();
         var tickets = await ticketEntities
@@ -164,7 +167,7 @@ public class TicketService
             .Include(t => t.Attendee)
             .Include(t => t.Event)
             .Include(t => t.Payment)
-                .ThenInclude(p => p.Buyer) // Добавить включение Buyer
+                .ThenInclude(p => p.Buyer)
             .AsQueryable();
 
         if (request.Filter.TicketIds.Count > 0)
@@ -201,6 +204,42 @@ public class TicketService
             EF.Functions.ILike(a.Attendee.FullName, $" %{request.Filter.AttendeeName}")
             );
 
+        if (request.Sort != null && request.Sort.Any())
+        {
+            IOrderedQueryable<Ticket>? orderedQuery = null;
+
+            foreach (var sort in request.Sort)
+            {
+                var isFirstSort = orderedQuery == null;
+                var isDescending = sort.SortDirection?.ToLower() == "desc";
+
+                Expression<Func<Ticket, object>> orderByExpression = sort.SortBy?.ToLower() switch
+                {
+                    "id" => t => t.Id,
+                    "eventtitle" => t => t.Event.Title,
+                    "eventid" => t => t.Event.Id,
+                    "eventdate" => t => t.Event.StartTime,
+                    "eventprice" => t => t.Event.Price,
+                    "attendeename" => t => t.Attendee != null ? t.Attendee.FullName : "",
+                    "paymentstatus" => t => t.Payment != null ? t.Payment.Status : "",
+                    "paymentdate" => t => t.Payment != null ? t.Payment.CreatedAt : DateTime.MinValue,
+                    "buyername" => t => t.Payment != null ? t.Payment.Buyer.FullName : "",
+                    "qrcode" => t => t.QRCode,
+                    _ => t => t.Id
+                };
+
+                orderedQuery = isFirstSort
+                    ? isDescending 
+                        ? query.OrderByDescending(orderByExpression)
+                        : query.OrderBy(orderByExpression)
+                    : isDescending
+                        ? orderedQuery!.ThenByDescending(orderByExpression)
+                        : orderedQuery!.ThenBy(orderByExpression);
+            }
+
+            query = orderedQuery ?? query;
+        }
+
         var total = await query.CountAsync();
 
         var tickets = await query
@@ -226,6 +265,7 @@ public class TicketService
         }
         var tickets = await _context.Tickets
             .Include(t => t.Payment)
+            .ThenInclude(p => p.Buyer)
             .Where(t => t.EventId == request.EventId && t.Payment == null)
             .ToListAsync();
         if (tickets.Count() < request.Attendees.Count)

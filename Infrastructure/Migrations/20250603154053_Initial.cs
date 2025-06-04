@@ -300,7 +300,7 @@ namespace Infrastructure.Migrations
 
             migrationBuilder.InsertData(
                 table: "Tickets",
-                columns: new[] { "Id", "AttendeeId", "EventId", "PaymentId", "QRCode", "UserId" },
+                columns: new[] { "Id", "AttendeeId", "Event", "PaymentId", "QRCode", "UserId" },
                 values: new object[,]
                 {
                     { new Guid("00c45b7e-6446-4c7a-8a43-346f599c2d4b"), null, new Guid("d43be1ec-ddc0-4330-99ed-c513636f7b52"), null, "TKTd43be1ec030", null },
@@ -368,7 +368,7 @@ namespace Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Tickets_EventId",
                 table: "Tickets",
-                column: "EventId");
+                column: "Event");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Tickets_PaymentId",
@@ -393,7 +393,7 @@ namespace Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_UserEventCalendars_EventId",
                 table: "UserEventCalendars",
-                column: "EventId");
+                column: "Event");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserEventCalendars_UserId",

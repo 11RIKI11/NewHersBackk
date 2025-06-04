@@ -56,7 +56,7 @@ namespace BackendApp.Controllers
             return NoContent();
         }
 
-        [HttpDelete("by-event{EventId:guid}")]
+        [HttpDelete("by-event{Event:guid}")]
         [ValidateModel]
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> DeleteUserEventByEvent([FromQuery]Guid userId, Guid eventId)
@@ -67,7 +67,7 @@ namespace BackendApp.Controllers
             return NoContent();
         }
 
-        [HttpDelete("me/by-event/{EventId:guid}")]
+        [HttpDelete("me/by-event/{Event:guid}")]
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "user")]
@@ -100,7 +100,7 @@ namespace BackendApp.Controllers
             return NoContent();
         }
 
-        [HttpPut("by-event/{EventId:guid}")]
+        [HttpPut("by-event/{Event:guid}")]
         [ValidateModel]
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> UpdateUserEventByEvent([FromQuery] Guid userId, Guid eventId, [FromBody] UserCalendarUpdateEventRequest request)
@@ -111,7 +111,7 @@ namespace BackendApp.Controllers
             return NoContent();
         }
 
-        [HttpPut("me/{EventId:guid}")]
+        [HttpPut("me/{Event:guid}")]
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "user")]
