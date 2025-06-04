@@ -59,7 +59,7 @@ namespace BackendApp.Controllers
             var result = await _eventService.DeleteEventAsync(id);
             if (!result.IsSuccess)
                 return NotFoundResponse(result.Error.ErrorMessage);
-            return NoContent();
+            return NoContentResponse();
         }
     }
 }
