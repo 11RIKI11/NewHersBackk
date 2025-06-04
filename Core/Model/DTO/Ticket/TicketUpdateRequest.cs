@@ -12,6 +12,6 @@ public class TicketUpdateRequest
     public Guid? AttendeeId { get; set; } = null;
 
     public string QrCode { get; set; } = string.Empty;
-
-    public Guid? PaymentId { get; set; } = null;
+    [Required]
+    public Guid UserId { get; set; }
 }

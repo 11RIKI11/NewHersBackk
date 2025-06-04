@@ -63,7 +63,7 @@ namespace BackendApp.Controllers
             var result = await _ticketService.UpdateTicketAsync(id, request);
             if (!result.IsSuccess)
                 return BadRequestResponse(result.Error.ErrorMessage);
-            return NoContent();
+            return NoContentResponse();
         }
 
         [HttpDelete("{id:guid}")]
@@ -72,7 +72,7 @@ namespace BackendApp.Controllers
             var result = await _ticketService.DeleteTicketAsync(id);
             if (!result.IsSuccess)
                 return BadRequestResponse(result.Error.ErrorMessage);
-            return NoContent();
+            return NoContentResponse();
         }
 
         [HttpPost("reserve/{Event:guid}")]
