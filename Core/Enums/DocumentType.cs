@@ -5,5 +5,6 @@ public enum DocumentType
     Passport,
     DriverLicense,
     ForeignPassport,
-    StudentCard
+    StudentCard,
+    BirthCertificate,
 }

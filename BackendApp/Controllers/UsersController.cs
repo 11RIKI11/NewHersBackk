@@ -64,7 +64,7 @@ public class UsersController : CustomControllerBase
 
         if (!result.IsSuccess)
             return BadRequestResponse(result.Error.ErrorMessage);
-        return NoContent();
+        return NoContentResponse();
     }
 
     [HttpDelete("{id:guid}")]
@@ -73,6 +73,6 @@ public class UsersController : CustomControllerBase
         var result = await _userService.DeleteUserAsync(id);
         if (!result.IsSuccess)
             return NotFoundResponse(result.Error.ErrorMessage);
-        return NoContent();
+        return NoContentResponse();
     }
 }

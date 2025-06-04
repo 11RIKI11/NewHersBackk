@@ -17,7 +17,7 @@ public class CustomControllerBase : Controller
     }
     protected IActionResult NoContentResponse()
     {
-        return StatusCode(204, ApiResponse.Success());
+        return StatusCode(200, ApiResponse.Success());
     }
     protected IActionResult BadRequestResponse(string errorMessage = "Validation Error", Dictionary<string, string>? details = null)
     {

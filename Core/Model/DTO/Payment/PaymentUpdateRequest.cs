@@ -17,6 +17,8 @@ public class PaymentUpdateRequest : IValidatableObject
     [Required]
     public string QrUrl { get; set; } = string.Empty;
 
+    public Guid BuyerId { get; set; } = Guid.Empty;
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         // Проверка, что при установке статуса "Оплачено" указана дата оплаты

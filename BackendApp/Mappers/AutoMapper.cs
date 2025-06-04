@@ -43,9 +43,11 @@ namespace BackendApp.Mappers
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => src.FullName))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()) // Хеширование пароля происходит в сервисе
+                .ForMember(dest => dest.BirthDate, opt => opt.MapFrom(src => src.BirthDate.ToUniversalTime()))
                 .ForMember(dest => dest.Role, opt => opt.MapFrom(_ => "user"));
 
-            CreateMap<UserUpdateRequest, User>();
+            CreateMap<UserUpdateRequest, User>()
+                .ForMember(dest => dest.BirthDate, opt => opt.MapFrom(src => src.BirthDate.Value.ToUniversalTime()));
 
             // Маппинги для Attendee
             CreateMap<Attendee, AttendeeResponse>()

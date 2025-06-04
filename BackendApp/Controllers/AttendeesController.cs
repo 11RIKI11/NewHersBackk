@@ -1,4 +1,5 @@
 ﻿using Core.Attribute;
+using Core.Model.DTO;
 using Core.Model.DTO.Attendee;
 using Infrastructure.Service;
 using Microsoft.AspNetCore.Authorization;
@@ -39,25 +40,25 @@ namespace BackendApp.Controllers
         public async Task<IActionResult> UpdateAttendeeById(Guid id, [FromBody] AttendeeUpdateRequest request)
         {
             var result = await _attendeeService.UpdateAttendeeAsync(id, request);
-            if (!result.IsSuccess) 
+            if (!result.IsSuccess)
                 return NotFoundResponse(result.Error.ErrorMessage);
-            return NoContent();
+            return NoContentResponse();
         }
 
         [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> DeleteAttendee (Guid id)
+        public async Task<IActionResult> DeleteAttendee(Guid id)
         {
             var result = await _attendeeService.DeleteAttendeeByIdAsync(id);
-            if(!result.IsSuccess) 
+            if (!result.IsSuccess)
                 return NotFoundResponse(result.Error.ErrorMessage);
-            return NoContent();
+            return NoContentResponse();
         }
 
-        [HttpPost]
+        [HttpPost("{userId:guid}")]
         [ValidateModel]
         [ValidateToken]
         [Authorize(Roles = "admin")]
-        public async Task<IActionResult> CreateAttendee([FromQuery]Guid userId, [FromBody] AttendeeAddRequest request) 
+        public async Task<IActionResult> CreateAttendee(Guid userId, [FromBody] AttendeeAddRequest request) 
         {
             var result = await _attendeeService.CreateAttendeeAsync(userId, request);
             if (!result.IsSuccess) 
@@ -97,6 +98,18 @@ namespace BackendApp.Controllers
         {
             var result = await _attendeeService.GetAttendeesByUserAsync(UserId.Value, request);
             if (!result.IsSuccess) 
+                return NotFoundResponse(result.Error.ErrorMessage);
+            return OkResponse(result.Data);
+        }
+
+        [HttpPost("by-user/{userId:guid}")]
+        [ValidateModel]
+        [ValidateToken]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> GetAttendeesByUser(Guid userId, AttendeeSearchRequest request)
+        {
+            var result = await _attendeeService.GetAttendeesByUserAsync(userId, request);
+            if (!result.IsSuccess)
                 return NotFoundResponse(result.Error.ErrorMessage);
             return OkResponse(result.Data);
         }

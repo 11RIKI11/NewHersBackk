@@ -102,7 +102,6 @@ public class UserService
 
         if (user == null)
             return ServiceResult<bool>.Failure("Пользователь с таким Id не найден", 404);
-
         _mapper.Map(request, user);
 
         _context.Users.Update(user);

@@ -1,5 +1,6 @@
 ﻿using Core.Enums;
 using Core.Model.DTO.Attendee;
+using Core.Model.DTO.Payment;
 using Core.Model.DTO.User;
 using Core.ValidateAttribute;
 using System.ComponentModel.DataAnnotations;
@@ -12,5 +13,5 @@ public class TicketUpdateRequest
 
     public string QrCode { get; set; } = string.Empty;
 
-    public Guid? PaymentId { get; set; } = Guid.Empty;
+    public Guid? PaymentId { get; set; } = null;
 }

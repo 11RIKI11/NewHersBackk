@@ -83,6 +83,10 @@ public class AttendeeService
             .Where(ua => ua.UserId == userId)
             .Select(ua => ua.AttendeeId)
             .ToListAsync();
+        if(attendeesIds.Count == 0)
+        {
+            return ServiceResult<SearchResultResponse<AttendeeResponse>>.Success(new SearchResultResponse<AttendeeResponse> { TotalCount = 0, Items = [] });
+        }
         request.Filter.AttendeeIds = attendeesIds;
         var searchResult = await GetAttendeesAsync(request);
         if (!searchResult.IsSuccess)
