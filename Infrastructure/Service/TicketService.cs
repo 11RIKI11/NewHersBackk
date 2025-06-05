@@ -331,7 +331,9 @@ public class TicketService
         if (tickets.Count() < request.Attendees.Count)
             return ServiceResult<List<Guid>>.Failure("Свободных билетов нет или недостаточно", 404);
         List<AttendeeResponse> attendeeList = new List<AttendeeResponse>();
+
         var attendeeCreateResult = await _attendeeService.CreateAttendeeRangeAsync(request.UserId, request.Attendees);
+
         if (!attendeeCreateResult.IsSuccess)
         {
             return ServiceResult<List<Guid>>.Failure("Ошибка при создании посетителя: "
@@ -356,6 +358,7 @@ public class TicketService
             .FirstOrDefaultAsync(t => t.EventId == request.EventId && t.Payment != null
             && t.Payment.Status.ToLower() == PaymentStatus.WaitingForPayment.ToString().ToLower()
             && t.Payment.BuyerId == request.UserId);
+
         if (reserveTicket != null)
         {
             foreach (var ticket in tickets)
@@ -406,7 +409,7 @@ public class TicketService
                 && p.Status.ToLower() == PaymentStatus.WaitingForPayment.ToString().ToLower());
 
         if (payment == null)
-            return ServiceResult<bool>.Failure("Бронирование не найдено", 404);
+            return ServiceResult<bool>.Success();
 
         // Очищаем данные для всех билетов в платеже
         foreach (var ticket in payment.Tickets)

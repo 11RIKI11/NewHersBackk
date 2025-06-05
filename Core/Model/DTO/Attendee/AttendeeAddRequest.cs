@@ -13,7 +13,7 @@ public class AttendeeAddRequest
 
     [Required]
     [MaxAge(100, ErrorMessage = "Возраст не должен превышать 100 лет")]
-    public DateTime BirthDate { get; set; }
+    public DateTime? BirthDate { get; set; }
     [Required]
     [EnumDataType(typeof(DocumentType), ErrorMessage = "Тип документа не соответствует типу документа")]
     public DocumentType DocumentType { get; set; } = DocumentType.Passport;

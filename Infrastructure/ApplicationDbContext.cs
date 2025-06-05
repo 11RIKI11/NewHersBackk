@@ -84,60 +84,75 @@ public class ApplicationDbContext : DbContext
             .WithMany()
             .HasForeignKey(p => p.BuyerId);
 
-        // --- Генерация данных ---
+        GenerateData(modelBuilder);
+    }
+
+
+    private void GenerateData(ModelBuilder modelBuilder)
+    {
         var events = new List<Event>();
         var users = new List<User>();
         var admins = new List<User>();
-        var tickets = new List<Ticket>();
         var attendees = new List<Attendee>();
+        var tickets = new List<Ticket>();
         var payments = new List<Payment>();
+        var userAttendees = new List<UserAttendee>();
 
         var rnd = new Random();
         var now = DateTime.UtcNow;
 
-        // 10 событий
-        string[] eventTitles = {"Экскурсия в Кремль", "Третьяковская галерея", "Музей космонавтики", 
-                               "Царицыно", "Коломенское", "Архитектурная прогулка", "Москва купеческая",
-                               "Вечерняя Москва", "Булгаковская Москва", "Московское метро"};
-        string[] locations = {"Красная площадь", "Лаврушинский переулок", "пр-т Мира", 
-                             "ул. Дольская", "пр-т Андропова", "Китай-город",
-                             "Замоскворечье", "Тверская улица", "Патриаршие пруды", "Площадь Революции"};
+        // Названия экскурсий по Новому Херсонесу
+        string[] eventTitles = {
+    "Экскурсия по древнему Херсонесу",
+    "Секреты раскопок в Херсонесе",
+    "Археологические находки Херсонеса",
+    "Вечерний Херсонес",
+    "Античный театр Херсонеса",
+    "История христианства в Херсонесе",
+    "Херсонес и Византия",
+    "Подземелья Херсонеса",
+    "Башни и укрепления Херсонеса",
+    "Мозаики и фрески Херсонеса"
+};
+        string location = "Новый Херсонес, Севастополь";
 
+        // 10 событий
         for (int i = 0; i < 10; i++)
         {
-            var startTime = now.AddDays(i + 1).Date.AddHours(10 + i % 4);
+            var startTime = now.AddDays(-(10 - i)).Date.AddHours(10 + i % 4); // прошедшие ивенты
             events.Add(new Event
             {
                 Id = Guid.NewGuid(),
                 Title = eventTitles[i],
                 Description = $"Увлекательная экскурсия по {eventTitles[i].ToLower()}",
-                Location = locations[i],
+                Location = location,
                 StartTime = startTime,
                 EndTime = startTime.AddHours(2),
-                Price = 1000 + (i * 200),
-                TicketsCount = 15,
-                IsActive = true,
-                Tag = i < 7 ? "excursion" : "event",
-                CreatedAt = now.AddDays(-10)
+                Price = 1200 + (i * 150),
+                TicketsCount = 20,
+                IsActive = i == 9, // последнее активное
+                Tag = "excursion",
+                CreatedAt = now.AddDays(-20 + i)
             });
         }
 
-        // 20 пользователей + 3 админа
-        for (int i = 1; i <= 20; i++)
+        // 50 пользователей
+        for (int i = 1; i <= 50; i++)
         {
             users.Add(new User
             {
                 Id = Guid.NewGuid(),
-                FullName = $"Иванов Иван {i}",
-                Email = $"user{i}@example.com",
+                FullName = $"Гость Херсонеса {i}",
+                Email = $"guest{i}@example.com",
                 PasswordHash = "hash123",
-                Phone = $"+7900{i:D7}",
+                Phone = $"+7978{i:D7}",
                 Role = "user",
-                BirthDate = DateTime.UtcNow.AddYears(-20 - rnd.Next(20)),
-                CreatedAt = now.AddDays(-30 + i)
+                BirthDate = DateTime.UtcNow.AddYears(-18 - rnd.Next(40)),
+                CreatedAt = now.AddDays(-50 + i)
             });
         }
 
+        // 3 администратора
         for (int i = 1; i <= 3; i++)
         {
             admins.Add(new User
@@ -148,28 +163,28 @@ public class ApplicationDbContext : DbContext
                 PasswordHash = "hashadmin",
                 Phone = $"+7999{i:D7}",
                 Role = "admin",
-                BirthDate = DateTime.UtcNow.AddYears(-30 - rnd.Next(10)),
+                BirthDate = DateTime.UtcNow.AddYears(-35 - rnd.Next(10)),
                 CreatedAt = now.AddDays(-60)
             });
         }
 
-        // 30 посетителей
-        for (int i = 1; i <= 30; i++)
+        // 100 участников
+        for (int i = 1; i <= 100; i++)
         {
             attendees.Add(new Attendee
             {
                 Id = Guid.NewGuid(),
-                FullName = $"Петров Петр {i}",
+                FullName = $"Участник Херсонеса {i}",
                 BirthDate = DateTime.UtcNow.AddYears(-25).AddDays(rnd.Next(3650)),
                 DocumentType = i % 2 == 0 ? "passport" : "foreignPassport",
-                DocumentNumber = i % 2 == 0 ? $"45{i:D02} {rnd.Next(100000, 999999)}" : $"71{rnd.Next(1000000, 9999999)}",
+                DocumentNumber = i % 2 == 0 ? $"40{i:D02} {rnd.Next(100000, 999999)}" : $"72{rnd.Next(1000000, 9999999)}",
                 CreatedAt = now.AddDays(-i)
             });
         }
 
         // 50 билетов (30% оплачены)
-        int paidCount = 15; // 30% от 50
-        for (int i = 1; i <= 50; i++)
+        int paidCount = 15;
+        for (int i = 0; i < 50; i++)
         {
             var selectedEvent = events[rnd.Next(events.Count)];
             var selectedAttendee = attendees[rnd.Next(attendees.Count)];
@@ -178,25 +193,24 @@ public class ApplicationDbContext : DbContext
             {
                 Id = Guid.NewGuid(),
                 EventId = selectedEvent.Id,
-                AttendeeId = i <= paidCount ? selectedAttendee.Id : null,
-                PaymentId = i <= paidCount ? Guid.NewGuid() : null,
-                QRCode = $"TKT{selectedEvent.Id.ToString()[..8]}{i:D3}"
+                AttendeeId = i < paidCount ? selectedAttendee.Id : null,
+                PaymentId = i < paidCount ? Guid.NewGuid() : null,
+                QRCode = $"HXN{selectedEvent.Id.ToString()[..8]}{i:D3}"
             });
         }
 
         // 10 оплат
         var paidTickets = tickets.Take(paidCount).ToList();
         int ticketIndex = 0;
-        
-        for (int i = 1; i <= 10; i++)
+
+        for (int i = 0; i < 10; i++)
         {
             var paymentId = Guid.NewGuid();
             var buyer = users[rnd.Next(users.Count)];
             var ticketsInPayment = Math.Min(2, paidCount - ticketIndex);
             var paymentTickets = paidTickets.Skip(ticketIndex).Take(ticketsInPayment);
-            
-            // Получаем сумму, используя прямую ссылку на событие
-            var amount = paymentTickets.Sum(t => 
+
+            var amount = paymentTickets.Sum(t =>
                 events.First(e => e.Id == t.EventId).Price);
 
             payments.Add(new Payment
@@ -205,9 +219,9 @@ public class ApplicationDbContext : DbContext
                 BuyerId = buyer.Id,
                 Amount = amount,
                 Status = "Successed",
-                QrUrl = $"https://payment.example.com/{paymentId}",
-                CreatedAt = now.AddDays(-5 + i),
-                PaidAt = now.AddDays(-5 + i).AddMinutes(rnd.Next(5, 30))
+                QrUrl = $"https://localhost:7177/images/qr-code.png",
+                CreatedAt = now.AddDays(-8 + i),
+                PaidAt = now.AddDays(-8 + i).AddMinutes(rnd.Next(5, 30))
             });
 
             foreach (var ticket in paymentTickets)
@@ -218,12 +232,32 @@ public class ApplicationDbContext : DbContext
             ticketIndex += ticketsInPayment;
         }
 
+        // Связь UserAttendee: участники, для которых пользователь оплатил билет
+        foreach (var payment in payments)
+        {
+            var buyerId = payment.BuyerId;
+            var relatedTickets = tickets
+                .Where(t => t.PaymentId == payment.Id && t.AttendeeId.HasValue)
+                .ToList();
+
+            foreach (var ticket in relatedTickets)
+            {
+                userAttendees.Add(new UserAttendee
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = buyerId,
+                    AttendeeId = ticket.AttendeeId!.Value
+                });
+            }
+        }
+
         // Сохранение данных
         modelBuilder.Entity<Event>().HasData(events);
         modelBuilder.Entity<User>().HasData(users.Concat(admins));
         modelBuilder.Entity<Attendee>().HasData(attendees);
         modelBuilder.Entity<Payment>().HasData(payments);
         modelBuilder.Entity<Ticket>().HasData(tickets);
+        modelBuilder.Entity<UserAttendee>().HasData(userAttendees);
     }
 }
 
