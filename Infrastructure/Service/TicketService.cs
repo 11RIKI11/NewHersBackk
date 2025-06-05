@@ -380,7 +380,10 @@ public class TicketService
 
     public async Task<ServiceResult<int>> GetAvailableTicketsCountAsync(Guid eventId)
     {
-        var count = await _context.Tickets.Where(t => t.EventId == eventId && t.Payment == null).CountAsync();
+        var availableTickets = await _context.Tickets
+            .Include(t => t.Payment)
+            .Where(t => t.EventId == eventId && t.Payment == null).ToListAsync();
+        var count = availableTickets.Count();
         return ServiceResult<int>.Success(count);
     }
 
